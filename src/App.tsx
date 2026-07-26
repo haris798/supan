@@ -28,6 +28,7 @@ import {
   MetricHistoryPoint,
   SupabaseConnectionConfig
 } from './types';
+import { QuotaMetricsCard } from './components/QuotaMetricsCard';
 import { Header } from './components/Header';
 import { ProjectStatusSection } from './components/ProjectStatusSection';
 import { UsageMetricsSection } from './components/UsageMetricsSection';
@@ -225,7 +226,16 @@ export default function App() {
                 onOpenCardDetail={() => setIsAnalyticsModalOpen(true)}
               />
 
-              {/* Section 4: Last (Largest tables) */}
+              {/* Section 4: Infrastructure Quota Metrics */}
+              <QuotaMetricsCard
+                analytics={analytics}
+                metrics={metrics}
+                onOpenSearch={() => setIsAnalyticsModalOpen(true)}
+                onOpenHelp={() => setIsSimulatorOpen(true)}
+                onOpenTips={() => setIsAnalyticsModalOpen(true)}
+              />
+
+              {/* Section 5: Last (Largest tables) */}
               <LargestTablesSection
                 tables={largestTables}
                 onSelectTable={(table) => setSelectedTable(table)}
@@ -288,6 +298,13 @@ export default function App() {
                 <AnalyticsOverviewSection
                   analytics={analytics}
                   onSeeMore={() => setIsAnalyticsModalOpen(true)}
+                />
+                <QuotaMetricsCard
+                  analytics={analytics}
+                  metrics={metrics}
+                  onOpenSearch={() => setIsAnalyticsModalOpen(true)}
+                  onOpenHelp={() => setIsSimulatorOpen(true)}
+                  onOpenTips={() => setIsAnalyticsModalOpen(true)}
                 />
                 <LargestTablesSection
                   tables={largestTables}
