@@ -139,17 +139,22 @@ export const SimulatedControlsDrawer: React.FC<SimulatedControlsDrawerProps> = (
               Kecepatan Auto-Sync Realtime
             </span>
             <div className="grid grid-cols-4 gap-2">
-              {[5, 10, 15, 30].map((sec) => (
+              {[
+                { label: '1 mnit', sec: 60 },
+                { label: '5 mnit', sec: 300 },
+                { label: '10 mnit', sec: 600 },
+                { label: '20 mnit', sec: 1200 }
+              ].map((opt) => (
                 <button
-                  key={sec}
-                  onClick={() => onChangeAutoRefreshSec(sec)}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all border ${
-                    autoRefreshSec === sec
+                  key={opt.sec}
+                  onClick={() => onChangeAutoRefreshSec(opt.sec)}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold transition-all border ${
+                    autoRefreshSec === opt.sec
                       ? 'bg-emerald-500 text-black border-emerald-400 shadow-md shadow-emerald-500/20'
                       : 'bg-[#22242d] border-[#2e313e] text-gray-400 hover:text-white'
                   }`}
                 >
-                  {sec}s
+                  {opt.label}
                 </button>
               ))}
             </div>

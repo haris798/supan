@@ -49,8 +49,8 @@ export default function App() {
 
   // UI view switches & Modals
   const [isMobileFrame, setIsMobileFrame] = React.useState<boolean>(true); // Default to mobile phone view as in prompt screenshot
-  const [autoRefreshSec, setAutoRefreshSec] = React.useState<number>(15);
-  const [countdown, setCountdown] = React.useState<number>(15);
+  const [autoRefreshSec, setAutoRefreshSec] = React.useState<number>(60);
+  const [countdown, setCountdown] = React.useState<number>(60);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
 
   const [selectedTable, setSelectedTable] = React.useState<TableInfo | null>(null);

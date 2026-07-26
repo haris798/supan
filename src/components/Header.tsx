@@ -12,6 +12,7 @@ import {
   Key
 } from 'lucide-react';
 import { SupabaseProject } from '../types';
+import { formatCountdown } from '../utils';
 
 interface HeaderProps {
   currentProject: SupabaseProject;
@@ -135,12 +136,12 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onRefresh}
           disabled={isRefreshing}
-          title={`Perbarui Data (${countdown}s auto-refresh)`}
+          title={`Perbarui Data (${formatCountdown(countdown)} auto-refresh)`}
           className="flex items-center space-x-1.5 bg-[#22242c] hover:bg-[#2b2d38] border border-[#2e313c] px-2.5 py-1.5 rounded-xl text-xs font-medium text-gray-300 transition-all"
         >
           <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline text-[11px] font-semibold text-gray-300">
-            {countdown}s
+            {formatCountdown(countdown)}
           </span>
         </button>
 

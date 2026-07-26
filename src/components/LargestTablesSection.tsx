@@ -1,6 +1,7 @@
 import React from 'react';
 import { Menu, LayoutGrid, ArrowUpRight, Search } from 'lucide-react';
 import { TableInfo } from '../types';
+import { formatTableSize } from '../utils';
 
 interface LargestTablesSectionProps {
   tables: TableInfo[];
@@ -62,7 +63,7 @@ export const LargestTablesSection: React.FC<LargestTablesSectionProps> = ({
                 <ArrowUpRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-emerald-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0 ml-1" />
               </div>
               <span className="block text-[11px] font-medium text-gray-400 truncate mt-0.5">
-                {table.schema} · {table.formattedSize}
+                {table.schema} · {formatTableSize(table.formattedSize, table.sizeBytes)}
               </span>
             </div>
           </div>

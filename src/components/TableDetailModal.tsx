@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, LayoutGrid, Key, Database, Copy, Check, Table as TableIcon, Code, Layers } from 'lucide-react';
 import { TableInfo } from '../types';
+import { formatTableSize } from '../utils';
 
 interface TableDetailModalProps {
   table: TableInfo | null;
@@ -39,7 +40,7 @@ export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClo
                 <h2 className="text-base font-bold text-gray-100">{table.name}</h2>
               </div>
               <p className="text-xs text-gray-400 mt-0.5">
-                Ukuran: <strong className="text-gray-200">{table.formattedSize}</strong> • Estimasi Baris: <strong className="text-gray-200">{table.estimatedRows.toLocaleString()}</strong>
+                Ukuran: <strong className="text-gray-200">{formatTableSize(table.formattedSize, table.sizeBytes)}</strong> • Estimasi Baris: <strong className="text-gray-200">{table.estimatedRows.toLocaleString()}</strong>
               </p>
             </div>
           </div>
