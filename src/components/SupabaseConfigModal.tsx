@@ -101,8 +101,8 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-100">Koneksi Proyek Supabase</h2>
-              <p className="text-xs text-gray-400">Hubungkan ke Supabase Project Management API</p>
+              <h2 className="text-base font-bold text-gray-100">Koneksi Supabase</h2>
+              <p className="text-xs text-gray-400">Hubungkan ke Supabase Project</p>
             </div>
           </div>
 
