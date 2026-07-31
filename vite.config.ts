@@ -2,10 +2,30 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(), 
+      tailwindcss(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        manifest: {
+          name: 'Supabase Dashboard',
+          short_name: 'Supabase',
+          description: 'A Supabase dashboard',
+          theme_color: '#16171a',
+          icons: [
+            {
+              src: 'icon.svg',
+              sizes: '192x192 512x512',
+              type: 'image/svg+xml'
+            }
+          ]
+        }
+      })
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

@@ -1,0 +1,5 @@
+{
+	"appId": "com.supabase.dashboard",
+	"appName": "SupabaseDashboard",
+	"webDir": "dist"
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SupabaseDashboard</string>
+    <string name="title_activity_main">SupabaseDashboard</string>
+    <string name="package_name">com.supabase.dashboard</string>
+    <string name="custom_url_scheme">com.supabase.dashboard</string>
+</resources>
