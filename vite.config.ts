@@ -12,8 +12,8 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'autoUpdate',
         manifest: {
-          name: 'Supabase Dashboard',
-          short_name: 'Supabase',
+          name: 'Supan',
+          short_name: 'Supan',
           description: 'A Supabase dashboard',
           theme_color: '#16171a',
           icons: [

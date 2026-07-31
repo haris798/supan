@@ -1,5 +1,5 @@
 {
-  "name": "Supabase Project Dashboard",
+  "name": "Supan",
   "description": "Real-time monitoring dashboard for Supabase projects with usage metrics, analytics, and table statistics.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
