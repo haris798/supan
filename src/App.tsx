@@ -23,8 +23,6 @@ import {
 } from './types';
 import { QuotaMetricsCard } from './components/QuotaMetricsCard';
 import { Header } from './components/Header';
-import { ProjectStatusSection } from './components/ProjectStatusSection';
-import { UsageMetricsSection } from './components/UsageMetricsSection';
 import { AnalyticsOverviewSection } from './components/AnalyticsOverviewSection';
 import { LargestTablesSection } from './components/LargestTablesSection';
 import { AnalyticsModal } from './components/AnalyticsModal';
@@ -270,7 +268,13 @@ export default function App() {
             {/* Mobile Title Header */}
             <div className="px-5 py-2.5 flex items-center justify-between border-b border-[#23252d] bg-[#16171a]">
               <div className="w-7"></div>
-              <h1 className="text-base font-bold text-white tracking-tight">Dashboard</h1>
+              <div className="flex items-center space-x-2">
+                <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-[#0d2f21] border border-emerald-500/30">
+                  <Database className="w-3.5 h-3.5 text-[#00e676]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00e676] border border-[#16171a] rounded-full"></span>
+                </div>
+                <h1 className="text-base font-bold text-white tracking-tight">Dashboard</h1>
+              </div>
               <button
                 onClick={() => setIsConfigModalOpen(true)}
                 className="text-emerald-400 p-1 rounded-lg hover:bg-[#23252e] transition-colors"
@@ -281,19 +285,6 @@ export default function App() {
 
             {/* Scrollable Dashboard Body */}
             <div className="p-4 space-y-5 overflow-y-auto max-h-[720px] custom-scrollbar bg-[#16171a]">
-              {/* Section 1: Top (Project Status) */}
-              <ProjectStatusSection
-                project={currentProject}
-                onCardClick={(title) => setIsAnalyticsModalOpen(true)}
-              />
-
-              {/* Section 2: Middle (Usage metrics - 24h) */}
-              <UsageMetricsSection
-                metrics={metrics}
-                onOpenDetailModal={() => setIsAnalyticsModalOpen(true)}
-                onOpenMenu={() => setIsConfigModalOpen(true)}
-              />
-
               {/* Section 3: Bottom (Analytics overview) */}
               <AnalyticsOverviewSection
                 analytics={analytics}
@@ -328,8 +319,9 @@ export default function App() {
             {/* Top Info Banner */}
             <div className="bg-[#1c1e24] border border-[#2b2e38] rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#0d2f21] text-[#00e676] flex items-center justify-center border border-emerald-500/20 shrink-0">
+                <div className="relative w-11 h-11 rounded-2xl bg-[#0d2f21] text-[#00e676] flex items-center justify-center border border-emerald-500/20 shrink-0">
                   <Database className="w-6 h-6" />
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#00e676] border-2 border-[#1c1e24] rounded-full"></span>
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
@@ -358,10 +350,9 @@ export default function App() {
             {/* Grid layout for sections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <ProjectStatusSection project={currentProject} />
-                <UsageMetricsSection
-                  metrics={metrics}
-                  onOpenDetailModal={() => setIsAnalyticsModalOpen(true)}
+                <LargestTablesSection
+                  tables={largestTables}
+                  onSelectTable={(t) => setSelectedTable(t)}
                   onOpenMenu={() => setIsConfigModalOpen(true)}
                 />
               </div>
@@ -374,11 +365,6 @@ export default function App() {
                 <QuotaMetricsCard
                   analytics={analytics}
                   metrics={metrics}
-                />
-                <LargestTablesSection
-                  tables={largestTables}
-                  onSelectTable={(t) => setSelectedTable(t)}
-                  onOpenMenu={() => setIsConfigModalOpen(true)}
                 />
               </div>
             </div>
