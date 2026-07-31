@@ -14,13 +14,6 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import {
-  initialProjects,
-  initialUsageMetrics,
-  initialAnalyticsOverview,
-  initialLargestTables,
-  generateHistoryData
-} from './mockData';
-import {
   SupabaseProject,
   UsageMetrics,
   AnalyticsOverview,
@@ -37,16 +30,46 @@ import { LargestTablesSection } from './components/LargestTablesSection';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { TableDetailModal } from './components/TableDetailModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
-import { SimulatedControlsDrawer } from './components/SimulatedControlsDrawer';
+import { supabase } from './supabaseClient';
+
+const emptyProject: SupabaseProject = {
+  id: 'connected-project',
+  name: 'My Supabase',
+  ref: 'pcoyvfhcniscynjkndlw',
+  region: 'ap-southeast-1',
+  ipAddress: '127.0.0.1',
+  createdAt: new Date().toISOString(),
+  status: 'Active',
+  organization: 'Personal',
+  databaseVersion: '15.1'
+};
+
+const emptyMetrics: UsageMetrics = {
+  restApiRequests: 0,
+  restApiTrend: 0,
+  authUsersCount: 0,
+  storageFilesCount: 0,
+  realtimeConnections: 0,
+};
+
+const emptyAnalytics: AnalyticsOverview = {
+  dbSizeBytes: 0,
+  connectionsCount: 0,
+  cacheHitRate: 0,
+  tablesCount: 0,
+  activeQueries: 0,
+  cpuUsagePct: 0,
+  memoryUsagePct: 0,
+};
 
 export default function App() {
   // State variables
-  const [projects, setProjects] = React.useState<SupabaseProject[]>(initialProjects);
-  const [currentProject, setCurrentProject] = React.useState<SupabaseProject>(initialProjects[0]);
-  const [metrics, setMetrics] = React.useState<UsageMetrics>(initialUsageMetrics);
-  const [analytics, setAnalytics] = React.useState<AnalyticsOverview>(initialAnalyticsOverview);
-  const [largestTables, setLargestTables] = React.useState<TableInfo[]>(initialLargestTables);
-  const [history, setHistory] = React.useState<MetricHistoryPoint[]>(generateHistoryData());
+  const [projects, setProjects] = React.useState<SupabaseProject[]>([emptyProject]);
+  const [currentProject, setCurrentProject] = React.useState<SupabaseProject>(emptyProject);
+  const [metrics, setMetrics] = React.useState<UsageMetrics>(emptyMetrics);
+  const [analytics, setAnalytics] = React.useState<AnalyticsOverview>(emptyAnalytics);
+  const [largestTables, setLargestTables] = React.useState<TableInfo[]>([]);
+  const [history, setHistory] = React.useState<MetricHistoryPoint[]>([]);
 
   // UI view switches & Modals
   const [isMobileFrame, setIsMobileFrame] = React.useState<boolean>(true); // Default to mobile phone view as in prompt screenshot
@@ -57,51 +80,140 @@ export default function App() {
   const [selectedTable, setSelectedTable] = React.useState<TableInfo | null>(null);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = React.useState<boolean>(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = React.useState<boolean>(false);
-  const [isSimulatorOpen, setIsSimulatorOpen] = React.useState<boolean>(false);
 
   // Connection config
   const [connectionConfig, setConnectionConfig] = React.useState<SupabaseConnectionConfig>({
-    projectUrl: 'https://xu4zztntzvgdfnfivgd535.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    isConnected: false
+    projectUrl: 'https://pcoyvfhcniscynjkndlw.supabase.co',
+    anonKey: 'sb_publishable_4HYaHZhOIECG56Eccpe4sA_xj-Ecy9n',
+    isConnected: true
   });
+
+  // Real-time Subscriptions
+  React.useEffect(() => {
+    if (!connectionConfig.isConnected) return;
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+        },
+        (payload) => {
+          const tableName = payload.table;
+          setLargestTables(prev => {
+            const existing = prev.find(t => t.name === tableName);
+            if (existing) {
+              return prev.map(t => 
+                t.name === tableName 
+                  ? { 
+                      ...t, 
+                      estimatedRows: Math.max(0, t.estimatedRows + (payload.eventType === 'INSERT' ? 1 : payload.eventType === 'DELETE' ? -1 : 0)),
+                      sampleData: payload.new ? [payload.new, ...(t.sampleData || [])].slice(0, 5) : t.sampleData
+                    }
+                  : t
+              ).sort((a, b) => b.estimatedRows - a.estimatedRows);
+            } else {
+              // Add new table
+              const newTable: TableInfo = {
+                id: tableName,
+                name: tableName,
+                schema: payload.schema,
+                sizeBytes: 8192,
+                formattedSize: '8 kB',
+                estimatedRows: 1,
+                columnsCount: Object.keys(payload.new || payload.old || {}).length,
+                primaryKey: 'id',
+                description: 'Auto-detected via realtime',
+                columns: [],
+                sampleData: payload.new ? [payload.new] : []
+              };
+              return [...prev, newTable].sort((a, b) => b.estimatedRows - a.estimatedRows);
+            }
+          });
+          
+          setMetrics(prev => ({
+            ...prev,
+            restApiRequests: prev.restApiRequests + 1,
+            restApiTrend: 1
+          }));
+          
+          setAnalytics(prev => ({
+            ...prev,
+            activeQueries: prev.activeQueries + 1
+          }));
+          
+          setTimeout(() => {
+            setAnalytics(prev => ({
+              ...prev,
+              activeQueries: Math.max(0, prev.activeQueries - 1)
+            }));
+          }, 1000);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+           setAnalytics(prev => ({...prev, connectionsCount: prev.connectionsCount + 1}));
+           setMetrics(prev => ({...prev, realtimeConnections: prev.realtimeConnections + 1}));
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      setAnalytics(prev => ({...prev, connectionsCount: Math.max(0, prev.connectionsCount - 1)}));
+      setMetrics(prev => ({...prev, realtimeConnections: Math.max(0, prev.realtimeConnections - 1)}));
+    };
+  }, [connectionConfig.isConnected]);
 
   // Manual & Auto Refresh logic
   const handleTriggerRefresh = React.useCallback(() => {
     setIsRefreshing(true);
 
-    // Simulate micro data updates
+    // Placeholder for actual data fetch
     setTimeout(() => {
-      setMetrics((prev) => ({
-        ...prev,
-        restApiRequests: prev.restApiRequests + Math.floor(Math.random() * 5) + 1
-      }));
-
-      setAnalytics((prev) => ({
-        ...prev,
-        cacheHitRate: Math.min(100.0, 99.8 + Math.random() * 0.2)
-      }));
-
-      // Append point to history
-      const now = new Date();
-      const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setHistory((prev) => [
-        ...prev.slice(1),
-        {
-          timestamp: now.toISOString(),
-          timeLabel,
-          restApi: metrics.restApiRequests + 1,
-          auth: metrics.authUsersCount,
-          connections: analytics.connectionsCount,
-          cacheHit: 100.0,
-          dbSizeMb: Math.round(analytics.dbSizeBytes / 1048576)
-        }
-      ]);
-
       setIsRefreshing(false);
       setCountdown(autoRefreshSec);
     }, 400);
-  }, [autoRefreshSec, metrics, analytics]);
+  }, [autoRefreshSec]);
+
+  React.useEffect(() => {
+    async function fetchRealTables() {
+      if (!connectionConfig.isConnected) return;
+      
+      try {
+        const { data: tablesData, error: tablesError } = await supabase.rpc('get_largest_tables');
+        
+        if (tablesError) {
+          console.warn("Could not fetch real tables via RPC.", tablesError);
+        } else if (tablesData && Array.isArray(tablesData)) {
+          setLargestTables(tablesData.sort((a, b) => b.sizeBytes - a.sizeBytes).slice(0, 4));
+        }
+
+        const { data: metricsData, error: metricsError } = await supabase.rpc('get_dashboard_metrics');
+
+        if (metricsError) {
+          console.warn("Could not fetch dashboard metrics via RPC.", metricsError);
+        } else if (metricsData) {
+          const d = metricsData as any;
+          setAnalytics(prev => ({
+            ...prev,
+            dbSizeBytes: d.dbSizeBytes || prev.dbSizeBytes,
+            connectionsCount: d.connectionsCount || prev.connectionsCount,
+            tablesCount: d.tablesCount || prev.tablesCount,
+          }));
+          setMetrics(prev => ({
+            ...prev,
+            authUsersCount: d.authUsersCount || prev.authUsersCount,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch tables/metrics:", err);
+      }
+    }
+    
+    fetchRealTables();
+  }, [connectionConfig.isConnected, handleTriggerRefresh]);
 
   // Real-time Countdown timer effect
   React.useEffect(() => {
@@ -118,38 +230,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, [handleTriggerRefresh, autoRefreshSec]);
 
-  // Handler to add a new table to top tables list
-  const handleAddTable = () => {
-    const newId = `tbl_${largestTables.length + 1}`;
-    const newTableNames = ['audit_logs', 'notifications', 'order_items', 'spatial_zones', 'user_sessions'];
-    const selectedName = newTableNames[largestTables.length % newTableNames.length];
 
-    const newTableItem: TableInfo = {
-      id: newId,
-      name: selectedName,
-      schema: 'public',
-      sizeBytes: 155648,
-      formattedSize: '152 kB',
-      estimatedRows: 420,
-      columnsCount: 4,
-      primaryKey: 'id',
-      description: 'Tabel tambahan real-time.',
-      columns: [
-        { name: 'id', type: 'uuid', isNullable: false, isPk: true },
-        { name: 'payload', type: 'jsonb', isNullable: true, isPk: false },
-        { name: 'created_at', type: 'timestamptz', isNullable: false, isPk: false }
-      ],
-      sampleData: [
-        { id: '111-aaa', payload: { event: 'INSERT' }, created_at: new Date().toISOString() }
-      ]
-    };
-
-    setLargestTables((prev) => [newTableItem, ...prev]);
-    setAnalytics((prev) => ({
-      ...prev,
-      tablesCount: prev.tablesCount + 1
-    }));
-  };
 
   return (
     <div className="min-h-screen bg-[#121316] text-gray-100 flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-black">
@@ -165,7 +246,6 @@ export default function App() {
         autoRefreshSec={autoRefreshSec}
         countdown={countdown}
         onOpenConfig={() => setIsConfigModalOpen(true)}
-        onOpenSimulator={() => setIsSimulatorOpen(true)}
         isConnectedLive={connectionConfig.isConnected}
       />
 
@@ -189,12 +269,7 @@ export default function App() {
 
             {/* Mobile Title Header */}
             <div className="px-5 py-2.5 flex items-center justify-between border-b border-[#23252d] bg-[#16171a]">
-              <button
-                onClick={() => setIsSimulatorOpen(true)}
-                className="text-emerald-400 p-1 rounded-lg hover:bg-[#23252e] transition-colors"
-              >
-                <SlidersHorizontal className="w-5 h-5" />
-              </button>
+              <div className="w-7"></div>
               <h1 className="text-base font-bold text-white tracking-tight">Dashboard</h1>
               <button
                 onClick={() => setIsConfigModalOpen(true)}
@@ -216,7 +291,7 @@ export default function App() {
               <UsageMetricsSection
                 metrics={metrics}
                 onOpenDetailModal={() => setIsAnalyticsModalOpen(true)}
-                onOpenMenu={() => setIsSimulatorOpen(true)}
+                onOpenMenu={() => setIsConfigModalOpen(true)}
               />
 
               {/* Section 3: Bottom (Analytics overview) */}
@@ -230,16 +305,13 @@ export default function App() {
               <QuotaMetricsCard
                 analytics={analytics}
                 metrics={metrics}
-                onOpenSearch={() => setIsAnalyticsModalOpen(true)}
-                onOpenHelp={() => setIsSimulatorOpen(true)}
-                onOpenTips={() => setIsAnalyticsModalOpen(true)}
               />
 
               {/* Section 5: Last (Largest tables) */}
               <LargestTablesSection
                 tables={largestTables}
                 onSelectTable={(table) => setSelectedTable(table)}
-                onOpenMenu={() => setIsSimulatorOpen(true)}
+                onOpenMenu={() => setIsConfigModalOpen(true)}
               />
             </div>
 
@@ -290,7 +362,7 @@ export default function App() {
                 <UsageMetricsSection
                   metrics={metrics}
                   onOpenDetailModal={() => setIsAnalyticsModalOpen(true)}
-                  onOpenMenu={() => setIsSimulatorOpen(true)}
+                  onOpenMenu={() => setIsConfigModalOpen(true)}
                 />
               </div>
 
@@ -302,14 +374,11 @@ export default function App() {
                 <QuotaMetricsCard
                   analytics={analytics}
                   metrics={metrics}
-                  onOpenSearch={() => setIsAnalyticsModalOpen(true)}
-                  onOpenHelp={() => setIsSimulatorOpen(true)}
-                  onOpenTips={() => setIsAnalyticsModalOpen(true)}
                 />
                 <LargestTablesSection
                   tables={largestTables}
                   onSelectTable={(t) => setSelectedTable(t)}
-                  onOpenMenu={() => setIsSimulatorOpen(true)}
+                  onOpenMenu={() => setIsConfigModalOpen(true)}
                 />
               </div>
             </div>
@@ -360,23 +429,6 @@ export default function App() {
             isConnected: false
           });
         }}
-      />
-
-      <SimulatedControlsDrawer
-        isOpen={isSimulatorOpen}
-        onClose={() => setIsSimulatorOpen(false)}
-        metrics={metrics}
-        analytics={analytics}
-        project={currentProject}
-        onUpdateMetrics={(fn) => setMetrics(fn)}
-        onUpdateAnalytics={(fn) => setAnalytics(fn)}
-        onUpdateProject={(fn) => setCurrentProject(fn)}
-        autoRefreshSec={autoRefreshSec}
-        onChangeAutoRefreshSec={(s) => {
-          setAutoRefreshSec(s);
-          setCountdown(s);
-        }}
-        onAddTable={handleAddTable}
       />
     </div>
   );

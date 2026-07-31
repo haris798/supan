@@ -1,0 +1,55 @@
+-- 1. Function to get largest tables
+CREATE OR REPLACE FUNCTION get_largest_tables()
+RETURNS json AS $$
+DECLARE
+  result json;
+BEGIN
+  SELECT json_agg(
+    json_build_object(
+      'id', t.table_name,
+      'name', t.table_name,
+      'schema', t.table_schema,
+      'sizeBytes', pg_total_relation_size('"' || t.table_schema || '"."' || t.table_name || '"'),
+      'formattedSize', pg_size_pretty(pg_total_relation_size('"' || t.table_schema || '"."' || t.table_name || '"')),
+      'estimatedRows', (SELECT reltuples::bigint FROM pg_class WHERE relname = t.table_name LIMIT 1),
+      'columnsCount', (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name),
+      'primaryKey', 'id',
+      'description', 'Real table from Supabase',
+      'columns', '[]'::json,
+      'sampleData', '[]'::json
+    )
+  ) INTO result
+  FROM information_schema.tables t
+  WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE';
+  
+  RETURN coalesce(result, '[]'::json);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Function to get real dashboard metrics
+CREATE OR REPLACE FUNCTION get_dashboard_metrics()
+RETURNS json AS $$
+DECLARE
+  db_size bigint;
+  conn_count int;
+  table_count int;
+  users_count int;
+BEGIN
+  SELECT pg_database_size(current_database()) INTO db_size;
+  SELECT count(*) INTO conn_count FROM pg_stat_activity;
+  SELECT count(*) INTO table_count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+  
+  BEGIN
+    SELECT count(*) INTO users_count FROM auth.users;
+  EXCEPTION WHEN OTHERS THEN
+    users_count := 0;
+  END;
+
+  RETURN json_build_object(
+    'dbSizeBytes', db_size,
+    'connectionsCount', conn_count,
+    'tablesCount', table_count,
+    'authUsersCount', users_count
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -1,13 +1,9 @@
 import React from 'react';
-import { Search, HelpCircle, Lightbulb } from 'lucide-react';
 import { AnalyticsOverview, UsageMetrics } from '../types';
 
 interface QuotaMetricsCardProps {
   analytics?: AnalyticsOverview;
   metrics?: UsageMetrics;
-  onOpenSearch?: () => void;
-  onOpenHelp?: () => void;
-  onOpenTips?: () => void;
 }
 
 interface ProgressRingProps {
@@ -55,26 +51,23 @@ const ProgressRing: React.FC<ProgressRingProps> = ({
 export const QuotaMetricsCard: React.FC<QuotaMetricsCardProps> = ({
   analytics,
   metrics,
-  onOpenSearch,
-  onOpenHelp,
-  onOpenTips,
 }) => {
   // Calculate dynamic database size in MB if available
   const dbSizeMb = analytics?.dbSizeBytes
     ? Math.round(analytics.dbSizeBytes / (1024 * 1024))
-    : 44;
+    : 0;
   
   // Calculate percentages for ring indicators
-  const egressMb = 13;
+  const egressMb = 0; // Replace hardcoded 13
   const egressLimitMb = 5 * 1024; // 5 GB
-  const egressPct = Math.max(1, Math.min(100, (egressMb / egressLimitMb) * 100));
+  const egressPct = Math.max(0, Math.min(100, (egressMb / egressLimitMb) * 100)); // Remove hardcoded min 1
 
   const dbLimitMb = 500;
-  const dbPct = Math.max(2, Math.min(100, (dbSizeMb / dbLimitMb) * 100));
+  const dbPct = Math.max(0, Math.min(100, (dbSizeMb / dbLimitMb) * 100)); // Remove hardcoded min 2
 
-  const mau = metrics?.authUsersCount ?? 1;
+  const mau = metrics?.authUsersCount ?? 0; // Replace hardcoded 1
   const mauLimit = 50000;
-  const mauPct = Math.max(1, Math.min(100, (mau / mauLimit) * 100));
+  const mauPct = Math.max(0, Math.min(100, (mau / mauLimit) * 100)); // Remove hardcoded min 1
 
   const storageGb = metrics?.storageFilesCount ? (metrics.storageFilesCount * 0.05).toFixed(1) : "0";
   const storageLimitGb = 1;
@@ -138,33 +131,6 @@ export const QuotaMetricsCard: React.FC<QuotaMetricsCardProps> = ({
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Floating Capsule Action Floating Toolbar (Matching the picture overlay) */}
-      <div className="flex justify-center -mt-4 relative z-10">
-        <div className="bg-[#1b1c22]/95 backdrop-blur-md border border-[#2d303e] rounded-full px-3 py-1.5 shadow-2xl flex items-center space-x-2">
-          <button
-            onClick={onOpenSearch}
-            title="Cari Metrik & Tabel"
-            className="w-8 h-8 rounded-full border border-[#333748] flex items-center justify-center text-gray-300 hover:text-white hover:border-emerald-400/50 hover:bg-[#252834] transition-all"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onOpenHelp}
-            title="Bantuan Quota Supabase"
-            className="w-8 h-8 rounded-full border border-[#333748] flex items-center justify-center text-gray-300 hover:text-white hover:border-emerald-400/50 hover:bg-[#252834] transition-all"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onOpenTips}
-            title="Tips Optimasi Database"
-            className="w-8 h-8 rounded-full border border-[#333748] flex items-center justify-center text-gray-300 hover:text-white hover:border-emerald-400/50 hover:bg-[#252834] transition-all"
-          >
-            <Lightbulb className="w-4 h-4" />
-          </button>
-        </div>
       </div>
     </div>
   );
