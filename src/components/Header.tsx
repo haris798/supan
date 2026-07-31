@@ -27,6 +27,7 @@ interface HeaderProps {
   onOpenConfig: () => void;
   onOpenSimulator: () => void;
   isConnectedLive: boolean;
+  latencyMs?: number | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,7 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
   countdown,
   onOpenConfig,
   onOpenSimulator,
-  isConnectedLive
+  isConnectedLive,
+  latencyMs
 }) => {
   const [projectDropdownOpen, setProjectDropdownOpen] = React.useState(false);
 
@@ -107,9 +109,38 @@ export const Header: React.FC<HeaderProps> = ({
           Supabase Project Dashboard
         </h1>
         {isConnectedLive ? (
-          <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-            LIVE API
-          </span>
+          <div className="flex items-center space-x-2">
+            <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+              LIVE API
+            </span>
+            {latencyMs !== undefined && (
+              <div 
+                className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-full border ${
+                  latencyMs === null 
+                    ? 'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                    : latencyMs < 200 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                      : latencyMs < 500
+                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                        : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                }`}
+                title="API Latency"
+              >
+                <div className={`w-2 h-2 rounded-full ${
+                  latencyMs === null 
+                    ? 'bg-gray-500' 
+                    : latencyMs < 200 
+                      ? 'bg-emerald-500 animate-pulse' 
+                      : latencyMs < 500
+                        ? 'bg-amber-500 animate-pulse'
+                        : 'bg-rose-500 animate-pulse'
+                }`} />
+                <span className="text-[10px] font-bold font-mono">
+                  {latencyMs === null ? '---' : `${latencyMs}ms`}
+                </span>
+              </div>
+            )}
+          </div>
         ) : (
           <span className="bg-amber-500/15 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/20">
             REALTIME SIMULATED

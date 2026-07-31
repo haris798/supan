@@ -32,7 +32,7 @@ import { supabase } from './supabaseClient';
 
 const emptyProject: SupabaseProject = {
   id: 'connected-project',
-  name: 'My Supabase',
+  name: 'Supabase',
   ref: 'pcoyvfhcniscynjkndlw',
   region: 'ap-southeast-1',
   ipAddress: '127.0.0.1',
@@ -78,6 +78,7 @@ export default function App() {
   const [selectedTable, setSelectedTable] = React.useState<TableInfo | null>(null);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = React.useState<boolean>(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = React.useState<boolean>(false);
+  const [latencyMs, setLatencyMs] = React.useState<number | null>(null);
 
   // Connection config
   const [connectionConfig, setConnectionConfig] = React.useState<SupabaseConnectionConfig>({
@@ -85,6 +86,43 @@ export default function App() {
     anonKey: 'sb_publishable_4HYaHZhOIECG56Eccpe4sA_xj-Ecy9n',
     isConnected: true
   });
+
+  // Ping Latency
+  React.useEffect(() => {
+    if (!connectionConfig.isConnected || !connectionConfig.projectUrl) {
+      setLatencyMs(null);
+      return;
+    }
+
+    let isMounted = true;
+    let timeoutId: number;
+
+    const measureLatency = async () => {
+      const start = performance.now();
+      try {
+        await fetch(`${connectionConfig.projectUrl}/auth/v1/health`, {
+          method: 'GET',
+          headers: { apikey: connectionConfig.anonKey },
+        });
+        if (isMounted) {
+          setLatencyMs(Math.round(performance.now() - start));
+        }
+      } catch (err) {
+        if (isMounted) setLatencyMs(null);
+      }
+      
+      if (isMounted) {
+        timeoutId = window.setTimeout(measureLatency, 5000);
+      }
+    };
+
+    measureLatency();
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [connectionConfig.isConnected, connectionConfig.projectUrl, connectionConfig.anonKey]);
 
   // Real-time Subscriptions
   React.useEffect(() => {
@@ -245,6 +283,7 @@ export default function App() {
         countdown={countdown}
         onOpenConfig={() => setIsConfigModalOpen(true)}
         isConnectedLive={connectionConfig.isConnected}
+        latencyMs={latencyMs}
       />
 
       {/* Main Container Area */}
@@ -316,47 +355,8 @@ export default function App() {
           /* Wide Desktop Fluid Layout */
           <div className="w-full space-y-6">
             
-            {/* Top Info Banner */}
-            <div className="bg-[#1c1e24] border border-[#2b2e38] rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="relative w-11 h-11 rounded-2xl bg-[#0d2f21] text-[#00e676] flex items-center justify-center border border-emerald-500/20 shrink-0">
-                  <Database className="w-6 h-6" />
-                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#00e676] border-2 border-[#1c1e24] rounded-full"></span>
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-lg font-bold text-white">{currentProject.name}</h2>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      {currentProject.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Region: <strong className="text-gray-200">{currentProject.region}</strong> • IP: <strong className="text-gray-200">{currentProject.ipAddress}</strong> • Ref: <strong className="text-gray-200">{currentProject.ref}</strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 self-end md:self-auto">
-                <button
-                  onClick={() => setIsAnalyticsModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center space-x-1.5"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Lihat Performance Analytics</span>
-                </button>
-              </div>
-            </div>
-
             {/* Grid layout for sections */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-6">
-                <LargestTablesSection
-                  tables={largestTables}
-                  onSelectTable={(t) => setSelectedTable(t)}
-                  onOpenMenu={() => setIsConfigModalOpen(true)}
-                />
-              </div>
-
               <div className="space-y-6">
                 <AnalyticsOverviewSection
                   analytics={analytics}
@@ -365,6 +365,14 @@ export default function App() {
                 <QuotaMetricsCard
                   analytics={analytics}
                   metrics={metrics}
+                />
+              </div>
+
+              <div className="space-y-6">
+                <LargestTablesSection
+                  tables={largestTables}
+                  onSelectTable={(t) => setSelectedTable(t)}
+                  onOpenMenu={() => setIsConfigModalOpen(true)}
                 />
               </div>
             </div>

@@ -19,14 +19,13 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 }) => {
   const [projectUrl, setProjectUrl] = React.useState(config.projectUrl || '');
   const [anonKey, setAnonKey] = React.useState(config.anonKey || '');
-  const [accessToken, setAccessToken] = React.useState(config.accessToken || '');
   const [testing, setTesting] = React.useState(false);
   const [testResult, setTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
 
   if (!isOpen) return null;
 
-  const handleTestAndSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTestAndSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setTesting(true);
     setTestResult(null);
 
@@ -61,7 +60,6 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
         onSaveConfig({
           projectUrl: urlToTest,
           anonKey: anonKey.trim(),
-          accessToken: accessToken.trim(),
           isConnected: true,
           lastSyncedAt: new Date().toLocaleTimeString()
         });
@@ -81,7 +79,6 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
       onSaveConfig({
         projectUrl: urlToTest,
         anonKey: anonKey.trim(),
-        accessToken: accessToken.trim(),
         isConnected: true,
         lastSyncedAt: new Date().toLocaleTimeString()
       });
@@ -106,32 +103,26 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-[#282b36] transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleTestAndSave}
+              disabled={testing}
+              title="Simpan Koneksi"
+              className="p-2 rounded-xl text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+            >
+              {testing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-[#282b36] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body / Form */}
-        <form onSubmit={handleTestAndSave} className="p-6 space-y-4">
-          
-          {config.isConnected && (
-            <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-xs text-emerald-300 font-medium">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Terhubung ke {config.projectUrl}</span>
-              </div>
-              <button
-                type="button"
-                onClick={onDisconnect}
-                className="text-[11px] font-bold text-rose-400 hover:text-rose-300 underline"
-              >
-                Putuskan
-              </button>
-            </div>
-          )}
+        <div className="p-6 space-y-4">
 
           <div>
             <label className="block text-xs font-semibold text-gray-300 mb-1">
@@ -163,22 +154,6 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 mb-1">
-              Management Personal Access Token (Opsional)
-            </label>
-            <input
-              type="password"
-              placeholder="sbp_1234567890abcdef..."
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
-              className="w-full bg-[#121419] border border-[#2e313e] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 font-mono"
-            />
-            <span className="text-[10px] text-gray-500 mt-1 block">
-              Gunakan untuk query otomatis metrik proyek dari Supabase Management API
-            </span>
-          </div>
-
           {testResult && (
             <div className={`p-3 rounded-xl border text-xs flex items-center space-x-2 ${
               testResult.success
@@ -190,34 +165,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             </div>
           )}
 
-          <div className="pt-2 flex items-center justify-end space-x-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-[#282b36] hover:bg-[#323644] text-gray-300 text-xs font-semibold transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={testing}
-              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition-all flex items-center space-x-1.5 shadow-lg shadow-emerald-500/20"
-            >
-              {testing ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Menguji...</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Simpan & Connect</span>
-                </>
-              )}
-            </button>
-          </div>
-
-        </form>
+        </div>
 
       </div>
     </div>
