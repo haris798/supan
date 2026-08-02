@@ -1,13 +1,9 @@
 import React from 'react';
 import {
-  Wifi,
-  BatteryCharging,
   SlidersHorizontal,
   Plus,
   RefreshCw,
   Sparkles,
-  Smartphone,
-  Monitor,
   Database,
   ArrowUpRight,
   ShieldCheck,
@@ -72,7 +68,6 @@ export default function App() {
   const [history, setHistory] = React.useState<MetricHistoryPoint[]>([]);
 
   // UI view switches & Modals
-  const [isMobileFrame, setIsMobileFrame] = React.useState<boolean>(true); // Default to mobile phone view as in prompt screenshot
   const [autoRefreshSec, setAutoRefreshSec] = React.useState<number>(60);
   const [countdown, setCountdown] = React.useState<number>(60);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
@@ -278,8 +273,6 @@ export default function App() {
         currentProject={currentProject}
         projects={projects}
         onSelectProject={(p) => setCurrentProject(p)}
-        isMobileFrame={isMobileFrame}
-        onToggleFrame={() => setIsMobileFrame(!isMobileFrame)}
         isRefreshing={isRefreshing}
         onRefresh={handleTriggerRefresh}
         autoRefreshSec={autoRefreshSec}
@@ -291,107 +284,31 @@ export default function App() {
       />
 
       {/* Main Container Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-6 flex flex-col items-center justify-start">
-        
-        {/* Toggleable Smartphone Frame vs Fluid Layout */}
-        {isMobileFrame ? (
-          /* Mobile Smartphone Canvas Frame (Matching exact dimensions and style of reference image) */
-          <div className="w-full max-w-[390px] bg-[#16171a] border border-[#2d2f38] rounded-[40px] shadow-2xl overflow-hidden my-2 sm:my-4 flex flex-col relative">
-            
-            {/* Phone Status Bar */}
-            <div className="px-6 pt-3 pb-1 flex items-center justify-between text-xs text-gray-300 select-none bg-[#16171a]">
-              <span className="font-bold text-[13px] tracking-tight text-white">9:24</span>
-              <div className="flex items-center space-x-2 text-emerald-400">
-                <Wifi className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-extrabold text-white">100%</span>
-                <BatteryCharging className="w-4 h-4 text-emerald-400" />
-              </div>
-            </div>
-
-            {/* Mobile Title Header */}
-            <div className="px-4 py-2.5 flex items-center justify-between border-b border-[#23252d] bg-[#16171a]">
-              <button
-                onClick={() => setIsBuildApkModalOpen(true)}
-                title="Build & Download APK"
-                className="flex items-center space-x-1 text-emerald-400 text-xs font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
-              >
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm-11.046 0c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm11.4045-6.02l1.9973-3.4592c.1213-.2103.0494-.4786-.1609-.5999-.2103-.1213-.4786-.0494-.5999.1609l-2.0298 3.5155C15.5866 8.3582 13.8504 8 12 8s-3.5866.3582-5.0886.9387L4.8816 5.4231c-.1213-.2103-.3896-.2822-.5999-.1609-.2103.1213-.2822.3896-.1609.5999l1.9973 3.4592C2.688 11.0768.3438 14.2818.0483 18h23.9034c-.2955-3.7182-2.6397-6.9232-6.0697-8.6786z"/>
-                </svg>
-                <span>APK</span>
-              </button>
-
-              <div className="flex items-center space-x-2">
-                <SupanIcon size={24} variant="app-icon" />
-                <h1 className="text-base font-bold text-white tracking-tight">SUPAN</h1>
-              </div>
-
-              <button
-                onClick={() => setIsConfigModalOpen(true)}
-                className="text-emerald-400 p-1 rounded-lg hover:bg-[#23252e] transition-colors"
-              >
-                <SlidersHorizontal className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Scrollable Dashboard Body */}
-            <div className="p-4 space-y-5 overflow-y-auto max-h-[720px] custom-scrollbar bg-[#16171a]">
-              {/* Section 3: Bottom (Analytics overview) */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 flex flex-col justify-start">
+        {/* Full Screen Responsive Dashboard Grid */}
+        <div className="w-full space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <AnalyticsOverviewSection
                 analytics={analytics}
                 onSeeMore={() => setIsAnalyticsModalOpen(true)}
                 onOpenCardDetail={() => setIsAnalyticsModalOpen(true)}
               />
-
-              {/* Section 4: Infrastructure Quota Metrics */}
               <QuotaMetricsCard
                 analytics={analytics}
                 metrics={metrics}
               />
+            </div>
 
-              {/* Section 5: Last (Largest tables) */}
+            <div className="space-y-6">
               <LargestTablesSection
                 tables={largestTables}
-                onSelectTable={(table) => setSelectedTable(table)}
+                onSelectTable={(t) => setSelectedTable(t)}
                 onOpenMenu={() => setIsConfigModalOpen(true)}
               />
             </div>
-
-            {/* Phone Bottom Notch Indicator Bar */}
-            <div className="w-full py-2 bg-[#16171a] flex justify-center">
-              <div className="w-32 h-1 bg-gray-600/70 rounded-full" />
-            </div>
-
           </div>
-        ) : (
-          /* Wide Desktop Fluid Layout */
-          <div className="w-full space-y-6">
-            
-            {/* Grid layout for sections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-6">
-                <AnalyticsOverviewSection
-                  analytics={analytics}
-                  onSeeMore={() => setIsAnalyticsModalOpen(true)}
-                />
-                <QuotaMetricsCard
-                  analytics={analytics}
-                  metrics={metrics}
-                />
-              </div>
-
-              <div className="space-y-6">
-                <LargestTablesSection
-                  tables={largestTables}
-                  onSelectTable={(t) => setSelectedTable(t)}
-                  onOpenMenu={() => setIsConfigModalOpen(true)}
-                />
-              </div>
-            </div>
-
-          </div>
-        )}
-
+        </div>
       </main>
 
       {/* Footer */}

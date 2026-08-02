@@ -3,8 +3,6 @@ import {
   Menu,
   SlidersHorizontal,
   RefreshCw,
-  Smartphone,
-  Monitor,
   Database,
   CheckCircle2,
   ChevronDown,
@@ -19,8 +17,6 @@ interface HeaderProps {
   currentProject: SupabaseProject;
   projects: SupabaseProject[];
   onSelectProject: (project: SupabaseProject) => void;
-  isMobileFrame: boolean;
-  onToggleFrame: () => void;
   isRefreshing: boolean;
   onRefresh: () => void;
   autoRefreshSec: number;
@@ -36,8 +32,6 @@ export const Header: React.FC<HeaderProps> = ({
   currentProject,
   projects,
   onSelectProject,
-  isMobileFrame,
-  onToggleFrame,
   isRefreshing,
   onRefresh,
   autoRefreshSec,
@@ -153,35 +147,8 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      {/* Right side: View Switcher, Build APK, Refresh, Config */}
+      {/* Right side: Refresh, Config */}
       <div className="flex items-center space-x-2">
-        {/* Build APK Button with Android Icon */}
-        {onOpenBuildApk && (
-          <button
-            onClick={onOpenBuildApk}
-            title="Build APK Android Supan"
-            className="flex items-center space-x-1.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/40 px-2.5 py-1.5 rounded-xl text-xs font-bold text-emerald-300 transition-all shadow-sm"
-          >
-            <svg className="w-4 h-4 fill-current text-emerald-400 shrink-0" viewBox="0 0 24 24">
-              <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm-11.046 0c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm11.4045-6.02l1.9973-3.4592c.1213-.2103.0494-.4786-.1609-.5999-.2103-.1213-.4786-.0494-.5999.1609l-2.0298 3.5155C15.5866 8.3582 13.8504 8 12 8s-3.5866.3582-5.0886.9387L4.8816 5.4231c-.1213-.2103-.3896-.2822-.5999-.1609-.2103.1213-.2822.3896-.1609.5999l1.9973 3.4592C2.688 11.0768.3438 14.2818.0483 18h23.9034c-.2955-3.7182-2.6397-6.9232-6.0697-8.6786z"/>
-            </svg>
-            <span className="hidden sm:inline">Build APK</span>
-          </button>
-        )}
-
-        {/* Frame Toggle (Mobile App View vs Wide Responsive) */}
-        <button
-          onClick={onToggleFrame}
-          title={isMobileFrame ? "Beralih ke Tampilan Desktop" : "Beralih ke Tampilan Mobile App"}
-          className={`p-2 rounded-xl transition-all border ${
-            isMobileFrame
-              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              : 'bg-[#22242c] border-[#2e313c] text-gray-400 hover:text-gray-200'
-          }`}
-        >
-          {isMobileFrame ? <Smartphone className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
-        </button>
-
         {/* Live Sync Status & Manual Refresh */}
         <button
           onClick={onRefresh}
