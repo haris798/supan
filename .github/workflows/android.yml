@@ -26,12 +26,7 @@ jobs:
           npm -v
 
       - name: Install Dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: npm install
 
       - name: Install Capacitor Android
         run: npm install @capacitor/android@latest --save
