@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { SupabaseProject } from '../types';
 import { formatCountdown } from '../utils';
+import { SupanIcon } from './SupanIcon';
 
 interface HeaderProps {
   currentProject: SupabaseProject;
@@ -26,6 +27,7 @@ interface HeaderProps {
   countdown: number;
   onOpenConfig: () => void;
   onOpenSimulator: () => void;
+  onOpenBuildApk?: () => void;
   isConnectedLive: boolean;
   latencyMs?: number | null;
 }
@@ -42,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   countdown,
   onOpenConfig,
   onOpenSimulator,
+  onOpenBuildApk,
   isConnectedLive,
   latencyMs
 }) => {
@@ -100,13 +103,15 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Middle: Title or Status badge */}
-      <div className="hidden md:flex items-center space-x-2">
-        <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-          <Database className="w-5 h-5" />
+      {/* Middle: Title or Status badge with SUPAN APK Icon */}
+      <div className="hidden md:flex items-center space-x-2.5">
+        <div className="relative group cursor-pointer" title="Supan App Icon">
+          <SupanIcon size={30} variant="app-icon" />
+          <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#18191d]" />
         </div>
-        <h1 className="text-base font-bold tracking-tight text-gray-100">
-          Supabase Project Dashboard
+        <h1 className="text-base font-bold tracking-tight text-gray-100 flex items-center gap-1.5">
+          <span>SUPAN</span>
+          <span className="text-xs text-gray-400 font-normal">| Project Dashboard</span>
         </h1>
         {isConnectedLive ? (
           <div className="flex items-center space-x-2">
@@ -148,8 +153,22 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      {/* Right side: View Switcher, Refresh, Config */}
+      {/* Right side: View Switcher, Build APK, Refresh, Config */}
       <div className="flex items-center space-x-2">
+        {/* Build APK Button with Android Icon */}
+        {onOpenBuildApk && (
+          <button
+            onClick={onOpenBuildApk}
+            title="Build APK Android Supan"
+            className="flex items-center space-x-1.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/40 px-2.5 py-1.5 rounded-xl text-xs font-bold text-emerald-300 transition-all shadow-sm"
+          >
+            <svg className="w-4 h-4 fill-current text-emerald-400 shrink-0" viewBox="0 0 24 24">
+              <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm-11.046 0c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm11.4045-6.02l1.9973-3.4592c.1213-.2103.0494-.4786-.1609-.5999-.2103-.1213-.4786-.0494-.5999.1609l-2.0298 3.5155C15.5866 8.3582 13.8504 8 12 8s-3.5866.3582-5.0886.9387L4.8816 5.4231c-.1213-.2103-.3896-.2822-.5999-.1609-.2103.1213-.2822.3896-.1609.5999l1.9973 3.4592C2.688 11.0768.3438 14.2818.0483 18h23.9034c-.2955-3.7182-2.6397-6.9232-6.0697-8.6786z"/>
+            </svg>
+            <span className="hidden sm:inline">Build APK</span>
+          </button>
+        )}
+
         {/* Frame Toggle (Mobile App View vs Wide Responsive) */}
         <button
           onClick={onToggleFrame}

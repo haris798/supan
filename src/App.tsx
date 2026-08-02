@@ -28,7 +28,9 @@ import { LargestTablesSection } from './components/LargestTablesSection';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { TableDetailModal } from './components/TableDetailModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
+import { BuildApkModal } from './components/BuildApkModal';
 import { supabase } from './supabaseClient';
+import { SupanIcon } from './components/SupanIcon';
 
 const emptyProject: SupabaseProject = {
   id: 'connected-project',
@@ -78,6 +80,7 @@ export default function App() {
   const [selectedTable, setSelectedTable] = React.useState<TableInfo | null>(null);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = React.useState<boolean>(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = React.useState<boolean>(false);
+  const [isBuildApkModalOpen, setIsBuildApkModalOpen] = React.useState<boolean>(false);
   const [latencyMs, setLatencyMs] = React.useState<number | null>(null);
 
   // Connection config
@@ -282,6 +285,7 @@ export default function App() {
         autoRefreshSec={autoRefreshSec}
         countdown={countdown}
         onOpenConfig={() => setIsConfigModalOpen(true)}
+        onOpenBuildApk={() => setIsBuildApkModalOpen(true)}
         isConnectedLive={connectionConfig.isConnected}
         latencyMs={latencyMs}
       />
@@ -305,15 +309,23 @@ export default function App() {
             </div>
 
             {/* Mobile Title Header */}
-            <div className="px-5 py-2.5 flex items-center justify-between border-b border-[#23252d] bg-[#16171a]">
-              <div className="w-7"></div>
+            <div className="px-4 py-2.5 flex items-center justify-between border-b border-[#23252d] bg-[#16171a]">
+              <button
+                onClick={() => setIsBuildApkModalOpen(true)}
+                title="Build & Download APK"
+                className="flex items-center space-x-1 text-emerald-400 text-xs font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                  <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm-11.046 0c-.5511 0-.9993-.4486-.9993-.9997 0-.5511.4482-.9993.9993-.9993.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997zm11.4045-6.02l1.9973-3.4592c.1213-.2103.0494-.4786-.1609-.5999-.2103-.1213-.4786-.0494-.5999.1609l-2.0298 3.5155C15.5866 8.3582 13.8504 8 12 8s-3.5866.3582-5.0886.9387L4.8816 5.4231c-.1213-.2103-.3896-.2822-.5999-.1609-.2103.1213-.2822.3896-.1609.5999l1.9973 3.4592C2.688 11.0768.3438 14.2818.0483 18h23.9034c-.2955-3.7182-2.6397-6.9232-6.0697-8.6786z"/>
+                </svg>
+                <span>APK</span>
+              </button>
+
               <div className="flex items-center space-x-2">
-                <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-[#0d2f21] border border-emerald-500/30">
-                  <Database className="w-3.5 h-3.5 text-[#00e676]" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-[#00e676] border border-[#16171a] rounded-full"></span>
-                </div>
-                <h1 className="text-base font-bold text-white tracking-tight">Dashboard</h1>
+                <SupanIcon size={24} variant="app-icon" />
+                <h1 className="text-base font-bold text-white tracking-tight">SUPAN</h1>
               </div>
+
               <button
                 onClick={() => setIsConfigModalOpen(true)}
                 className="text-emerald-400 p-1 rounded-lg hover:bg-[#23252e] transition-colors"
@@ -385,6 +397,9 @@ export default function App() {
       {/* Footer */}
       <footer className="w-full border-t border-[#23252e] bg-[#141518] py-4 px-6 text-center text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
+          <SupanIcon size={20} variant="app-icon" />
+          <span className="font-semibold text-gray-300">SUPAN</span>
+          <span className="text-gray-600">•</span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Supabase Real-time Monitoring Engine v2.4</span>
         </div>
@@ -423,6 +438,11 @@ export default function App() {
             isConnected: false
           });
         }}
+      />
+
+      <BuildApkModal
+        isOpen={isBuildApkModalOpen}
+        onClose={() => setIsBuildApkModalOpen(false)}
       />
     </div>
   );
