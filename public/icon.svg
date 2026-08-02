@@ -12,8 +12,9 @@
     </linearGradient>
   </defs>
 
-<!-- Outer App Icon Rounded Container -->
-  <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#bgGradient)" stroke="#cbd5e1" strokeWidth="1.5" />
+<!-- Full Base Solid Light Canvas -->
+  <rect x="0" y="0" width="100" height="100" fill="#f8fafc" />
+  <rect x="0" y="0" width="100" height="100" rx="22" fill="url(#bgGradient)" stroke="#cbd5e1" strokeWidth="1" />
 
   <!-- Background Network Mesh Lines -->
   <g opacity="0.35">
