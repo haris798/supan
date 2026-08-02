@@ -15,14 +15,7 @@ export default defineConfig(() => {
           name: 'Supan',
           short_name: 'Supan',
           description: 'A Supabase dashboard',
-          theme_color: '#16171a',
-          icons: [
-            {
-              src: 'icon.png',
-              sizes: '192x192 512x512',
-              type: 'image/png'
-            }
-          ]
+          theme_color: '#16171a'
         }
       })
     ],

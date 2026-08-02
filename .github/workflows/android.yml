@@ -45,17 +45,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create Android Platform
-        run: |
-          rm -rf android
-          npx cap add android
-
-      - name: Generate & Inject Android App Icons
-        run: |
-          npm install sharp --no-save
-          node scripts/generate-icons.js
-          node scripts/generate-android-icons.js
-
       - name: Sync Capacitor
         run: npx cap sync android
 

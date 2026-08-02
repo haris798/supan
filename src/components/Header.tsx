@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { SupabaseProject } from '../types';
 import { formatCountdown } from '../utils';
-import { SupanIcon } from './SupanIcon';
 
 interface HeaderProps {
   currentProject: SupabaseProject;
@@ -99,10 +98,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Middle: Title or Status badge with SUPAN APK Icon */}
       <div className="hidden md:flex items-center space-x-2.5">
-        <div className="relative group cursor-pointer" title="Supan App Icon">
-          <SupanIcon size={30} variant="app-icon" />
-          <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#18191d]" />
-        </div>
         <h1 className="text-base font-bold tracking-tight text-gray-100 flex items-center gap-1.5">
           <span>SUPAN</span>
           <span className="text-xs text-gray-400 font-normal">| Project Dashboard</span>

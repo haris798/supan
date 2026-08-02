@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Play
 } from 'lucide-react';
-import { SupanIcon } from './SupanIcon';
 
 interface BuildApkModalProps {
   isOpen: boolean;
@@ -119,7 +118,6 @@ export const BuildApkModal: React.FC<BuildApkModalProps> = ({ isOpen, onClose })
           {/* App Metadata Card */}
           <div className="bg-[#1e2027] border border-[#2d303d] rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center space-x-3.5">
-              <SupanIcon size={44} variant="app-icon" />
               <div>
                 <h4 className="text-sm font-bold text-white">SUPAN Mobile</h4>
                 <p className="text-xs text-gray-400 font-mono mt-0.5">com.supabase.dashboard</p>
