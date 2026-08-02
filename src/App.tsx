@@ -26,7 +26,6 @@ import { TableDetailModal } from './components/TableDetailModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 import { BuildApkModal } from './components/BuildApkModal';
 import { supabase } from './supabaseClient';
-import { SupanIcon } from './components/SupanIcon';
 
 const emptyProject: SupabaseProject = {
   id: 'connected-project',
@@ -314,9 +313,6 @@ export default function App() {
       {/* Footer */}
       <footer className="w-full border-t border-[#23252e] bg-[#141518] py-4 px-6 text-center text-xs text-gray-500 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
-          <SupanIcon size={20} variant="app-icon" />
-          <span className="font-semibold text-gray-300">SUPAN</span>
-          <span className="text-gray-600">•</span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Supabase Real-time Monitoring Engine v2.4</span>
         </div>
