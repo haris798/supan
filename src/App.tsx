@@ -151,6 +151,21 @@ const defaultTables: TableInfo[] = [
   }
 ];
 
+const defaultHistory: MetricHistoryPoint[] = Array.from({ length: 24 }).map((_, i) => {
+  const hour = (new Date().getHours() - (23 - i) + 24) % 24;
+  const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
+  const baseRest = 140 + Math.floor(Math.sin(i / 2.5) * 80) + Math.floor(Math.sin(i / 1.2) * 20);
+  return {
+    timestamp: new Date(Date.now() - (23 - i) * 3600000).toISOString(),
+    timeLabel,
+    restApi: Math.max(15, baseRest),
+    auth: Math.floor(baseRest * 0.12),
+    connections: 14 + Math.floor(Math.sin(i / 3) * 6),
+    cacheHit: 98.4 + Math.sin(i / 2) * 0.8,
+    dbSizeMb: 34.2 + (i * 0.15)
+  };
+});
+
 export default function App() {
   // State variables
   const [projects, setProjects] = React.useState<SupabaseProject[]>([emptyProject]);
@@ -158,7 +173,7 @@ export default function App() {
   const [metrics, setMetrics] = React.useState<UsageMetrics>(emptyMetrics);
   const [analytics, setAnalytics] = React.useState<AnalyticsOverview>(emptyAnalytics);
   const [largestTables, setLargestTables] = React.useState<TableInfo[]>(defaultTables);
-  const [history, setHistory] = React.useState<MetricHistoryPoint[]>([]);
+  const [history, setHistory] = React.useState<MetricHistoryPoint[]>(defaultHistory);
 
   // UI view switches & Modals
   const [autoRefreshSec, setAutoRefreshSec] = React.useState<number>(60);
@@ -424,6 +439,7 @@ export default function App() {
                 tables={largestTables}
                 onSelectTable={(t) => setSelectedTable(t)}
                 onOpenMenu={() => setIsConfigModalOpen(true)}
+                history={history}
               />
             </div>
           </div>
