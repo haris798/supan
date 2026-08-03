@@ -17,12 +17,13 @@ await sharp(svgBuffer)
   .png()
   .toFile(path.resolve('assets/icon-only.png'));
 
-// 3. Generate assets/icon-background.png (1024x1024 solid capacitor blue)
+// 3. Generate assets/icon-background.png (1024x1024 solid dark emerald canvas)
 const bgSvg = `<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#53b9ff" />
-      <stop offset="100%" stop-color="#0054e9" />
+      <stop offset="0%" stop-color="#151821" />
+      <stop offset="50%" stop-color="#0f1117" />
+      <stop offset="100%" stop-color="#090a0e" />
     </linearGradient>
   </defs>
   <rect width="1024" height="1024" fill="url(#bgGrad)" />
@@ -33,18 +34,32 @@ await sharp(Buffer.from(bgSvg))
   .png()
   .toFile(path.resolve('assets/icon-background.png'));
 
-// 4. Generate assets/icon-foreground.png (1024x1024 transparent with white emblem)
+// 4. Generate assets/icon-foreground.png (1024x1024 adaptive icon foreground)
 const fgSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024">
   <defs>
-    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#e0f2fe" />
+    <linearGradient id="supaBoltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3ef09d" />
+      <stop offset="50%" stop-color="#3ecf8e" />
+      <stop offset="100%" stop-color="#10b981" />
     </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
-  <g transform="translate(0, 16)" fill="url(#boltGrad)">
-    <path d="M 256,96 L 384,176 L 256,256 L 128,176 Z" opacity="0.95" />
-    <path d="M 128,208 L 256,288 L 384,208 L 384,256 L 256,336 L 128,256 Z" opacity="0.85" />
-    <path d="M 128,288 L 256,368 L 384,288 L 384,336 L 256,416 L 128,336 Z" />
+  <g transform="translate(0, 0)" filter="url(#glow)">
+    <path d="M 276,88 
+             L 156,260 
+             C 148,272 158,288 172,288 
+             L 248,288 
+             L 220,420 
+             C 216,436 238,446 248,432 
+             L 368,252 
+             C 376,240 366,224 352,224 
+             L 276,224 
+             L 304,100 
+             C 308,84 286,74 276,88 Z" 
+          fill="url(#supaBoltGrad)" />
   </g>
 </svg>`;
 
@@ -53,26 +68,40 @@ await sharp(Buffer.from(fgSvg))
   .png()
   .toFile(path.resolve('assets/icon-foreground.png'));
 
-// 5. Generate assets/splash.png (2732x2732 with dark/blue bg and centered emblem)
+// 5. Generate assets/splash.png (2732x2732 splash screen)
 const splashSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
   <defs>
-    <linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a" />
-      <stop offset="50%" stop-color="#0284c7" />
-      <stop offset="100%" stop-color="#0369a1" />
+    <linearGradient id="splashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#151821" />
+      <stop offset="50%" stop-color="#0d0f14" />
+      <stop offset="100%" stop-color="#050608" />
     </linearGradient>
-    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" />
-      <stop offset="100%" stop-color="#e0f2fe" />
+    <linearGradient id="supaBoltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3ef09d" />
+      <stop offset="50%" stop-color="#3ecf8e" />
+      <stop offset="100%" stop-color="#10b981" />
     </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
 
-  <rect width="2732" height="2732" fill="url(#splashGrad)" />
+  <rect width="2732" height="2732" fill="url(#splashBgGrad)" />
 
-  <g transform="translate(1110, 1110) scale(1) translate(0, 8)" fill="url(#boltGrad)">
-    <path d="M 256,96 L 384,176 L 256,256 L 128,176 Z" opacity="0.95" />
-    <path d="M 128,208 L 256,288 L 384,208 L 384,256 L 256,336 L 128,256 Z" opacity="0.85" />
-    <path d="M 128,288 L 256,368 L 384,288 L 384,336 L 256,416 L 128,336 Z" />
+  <g transform="translate(1110, 1110)" filter="url(#glow)">
+    <path d="M 276,88 
+             L 156,260 
+             C 148,272 158,288 172,288 
+             L 248,288 
+             L 220,420 
+             C 216,436 238,446 248,432 
+             L 368,252 
+             C 376,240 366,224 352,224 
+             L 276,224 
+             L 304,100 
+             C 308,84 286,74 276,88 Z" 
+          fill="url(#supaBoltGrad)" />
   </g>
 </svg>`;
 
@@ -81,4 +110,4 @@ await sharp(Buffer.from(splashSvg))
   .png()
   .toFile(path.resolve('assets/splash.png'));
 
-console.log('Successfully generated default Capacitor icons and splash images!');
+console.log('Successfully generated Supan database custom icons and splash images!');
