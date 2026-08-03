@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   ChevronDown,
   Sparkles,
-  Key
+  Key,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { SupabaseProject } from '../types';
 import { formatCountdown } from '../utils';
@@ -25,6 +27,8 @@ interface HeaderProps {
   onOpenBuildApk?: () => void;
   isConnectedLive: boolean;
   latencyMs?: number | null;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,7 +43,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSimulator,
   onOpenBuildApk,
   isConnectedLive,
-  latencyMs
+  latencyMs,
+  theme = 'dark',
+  onToggleTheme
 }) => {
   const [projectDropdownOpen, setProjectDropdownOpen] = React.useState(false);
 
@@ -70,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {projectDropdownOpen && (
             <div className="absolute left-0 mt-2 w-64 bg-[#1f2128] border border-[#323542] rounded-2xl shadow-2xl z-50 py-2 overflow-hidden">
-              <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-[#2d303b]">
+              <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 border-b border-[#2d303b]">
                 Pilih Proyek Supabase
               </div>
               {projects.map((p) => (
@@ -174,6 +180,21 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <SlidersHorizontal className="w-4 h-4 text-emerald-400" />
         </button>
+
+        {/* Theme Toggle Button (Light/Dark Mode) */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            title={theme === 'dark' ? "Ganti ke Mode Terang (Light Mode)" : "Ganti ke Mode Gelap (Dark Mode)"}
+            className="p-2 rounded-xl bg-[#22242c] hover:bg-[#2c2f3a] border border-[#2e313c] text-gray-300 hover:text-white transition-colors"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-indigo-400" />
+            )}
+          </button>
+        )}
       </div>
     </header>
   );

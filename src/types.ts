@@ -40,6 +40,7 @@ export interface TableInfo {
   description?: string;
   columns?: { name: string; type: string; isNullable: boolean; isPk: boolean }[];
   sampleData?: Record<string, any>[];
+  activityLevel?: 'high' | 'medium' | 'low';
 }
 
 export interface MetricHistoryPoint {
@@ -50,6 +51,17 @@ export interface MetricHistoryPoint {
   connections: number;
   cacheHit: number;
   dbSizeMb: number;
+}
+
+export interface DatabaseErrorLog {
+  id: string;
+  timestamp: string;
+  severity: 'ERROR' | 'FATAL' | 'WARNING';
+  code: string;
+  message: string;
+  query?: string;
+  detail?: string;
+  clientIp?: string;
 }
 
 export interface SupabaseConnectionConfig {

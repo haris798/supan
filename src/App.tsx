@@ -57,19 +57,137 @@ const emptyAnalytics: AnalyticsOverview = {
   memoryUsagePct: 0,
 };
 
+const defaultTables: TableInfo[] = [
+  {
+    id: 'colota_locations',
+    name: 'colota_locations',
+    schema: 'public',
+    sizeBytes: 15728640,
+    formattedSize: '15.3 MB',
+    estimatedRows: 48200,
+    columnsCount: 12,
+    primaryKey: 'id',
+    activityLevel: 'high',
+    description: 'Location and GIS tracking points',
+    columns: [
+      { name: 'id', type: 'uuid', isNullable: false, isPk: true },
+      { name: 'name', type: 'text', isNullable: false, isPk: false },
+      { name: 'latitude', type: 'float8', isNullable: false, isPk: false },
+      { name: 'longitude', type: 'float8', isNullable: false, isPk: false }
+    ]
+  },
+  {
+    id: 'user_sessions',
+    name: 'user_sessions',
+    schema: 'public',
+    sizeBytes: 8388608,
+    formattedSize: '8.2 MB',
+    estimatedRows: 19400,
+    columnsCount: 8,
+    primaryKey: 'id',
+    activityLevel: 'high',
+    description: 'Active authentication user sessions',
+    columns: [
+      { name: 'id', type: 'uuid', isNullable: false, isPk: true },
+      { name: 'user_id', type: 'uuid', isNullable: false, isPk: false },
+      { name: 'token', type: 'text', isNullable: false, isPk: false }
+    ]
+  },
+  {
+    id: 'audit_logs',
+    name: 'audit_logs',
+    schema: 'public',
+    sizeBytes: 4194304,
+    formattedSize: '4.1 MB',
+    estimatedRows: 8200,
+    columnsCount: 6,
+    primaryKey: 'id',
+    activityLevel: 'high',
+    description: 'System-wide activity and security audit entries',
+    columns: [
+      { name: 'id', type: 'uuid', isNullable: false, isPk: true },
+      { name: 'event', type: 'text', isNullable: false, isPk: false }
+    ]
+  },
+  {
+    id: 'spatial_ref_sys',
+    name: 'spatial_ref_sys',
+    schema: 'public',
+    sizeBytes: 3145728,
+    formattedSize: '3.1 MB',
+    estimatedRows: 4800,
+    columnsCount: 5,
+    primaryKey: 'srid',
+    activityLevel: 'low',
+    description: 'PostGIS spatial reference systems data',
+    columns: [
+      { name: 'srid', type: 'integer', isNullable: false, isPk: true },
+      { name: 'auth_name', type: 'text', isNullable: true, isPk: false }
+    ]
+  },
+  {
+    id: 'system_configs',
+    name: 'system_configs',
+    schema: 'public',
+    sizeBytes: 1048576,
+    formattedSize: '1.0 MB',
+    estimatedRows: 120,
+    columnsCount: 4,
+    primaryKey: 'key',
+    activityLevel: 'low',
+    description: 'Application feature flags and config parameters'
+  },
+  {
+    id: 'app_categories',
+    name: 'app_categories',
+    schema: 'public',
+    sizeBytes: 524288,
+    formattedSize: '512 kB',
+    estimatedRows: 45,
+    columnsCount: 3,
+    primaryKey: 'id',
+    activityLevel: 'low',
+    description: 'Static category lookup taxonomy'
+  }
+];
+
 export default function App() {
   // State variables
   const [projects, setProjects] = React.useState<SupabaseProject[]>([emptyProject]);
   const [currentProject, setCurrentProject] = React.useState<SupabaseProject>(emptyProject);
   const [metrics, setMetrics] = React.useState<UsageMetrics>(emptyMetrics);
   const [analytics, setAnalytics] = React.useState<AnalyticsOverview>(emptyAnalytics);
-  const [largestTables, setLargestTables] = React.useState<TableInfo[]>([]);
+  const [largestTables, setLargestTables] = React.useState<TableInfo[]>(defaultTables);
   const [history, setHistory] = React.useState<MetricHistoryPoint[]>([]);
 
   // UI view switches & Modals
   const [autoRefreshSec, setAutoRefreshSec] = React.useState<number>(60);
   const [countdown, setCountdown] = React.useState<number>(60);
   const [isRefreshing, setIsRefreshing] = React.useState<boolean>(false);
+
+  // Theme State (Dark / Light Mode)
+  const [theme, setTheme] = React.useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('supan_theme');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  });
+
+  const toggleTheme = React.useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('supan_theme', next);
+      return next;
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    }
+  }, [theme]);
 
   const [selectedTable, setSelectedTable] = React.useState<TableInfo | null>(null);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = React.useState<boolean>(false);
@@ -266,7 +384,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-[#121316] text-gray-100 flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-black">
+    <div className={`min-h-screen ${theme === 'light' ? 'light bg-slate-100 text-slate-900' : 'bg-[#121316] text-gray-100'} flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-black transition-colors duration-200`}>
       {/* App Top Navigation Header */}
       <Header
         currentProject={currentProject}
@@ -280,6 +398,8 @@ export default function App() {
         onOpenBuildApk={() => setIsBuildApkModalOpen(true)}
         isConnectedLive={connectionConfig.isConnected}
         latencyMs={latencyMs}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Container Area */}
@@ -316,9 +436,6 @@ export default function App() {
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Supabase Real-time Monitoring Engine v2.4</span>
         </div>
-        <div>
-          <span>Dibuat untuk Supabase Management API • Mode Dark Theme</span>
-        </div>
       </footer>
 
       {/* Modals & Drawers */}
@@ -329,6 +446,8 @@ export default function App() {
         metrics={metrics}
         history={history}
         onRefresh={handleTriggerRefresh}
+        projectRef={currentProject.ref}
+        connectionConfig={connectionConfig}
       />
 
       <TableDetailModal

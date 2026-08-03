@@ -105,7 +105,7 @@ export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClo
               {table.sampleData && table.sampleData.length > 0 ? (
                 <div className="overflow-x-auto rounded-2xl border border-[#2e313e] bg-[#15171c]">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-[#1e2027] text-gray-400 uppercase font-semibold text-[10px] border-b border-[#2e313e]">
+                    <thead className="bg-[#1e2027] text-gray-400 font-semibold text-[10px] border-b border-[#2e313e]">
                       <tr>
                         {Object.keys(table.sampleData[0]).map((col) => (
                           <th key={col} className="px-4 py-2.5 font-bold tracking-wider">
@@ -139,7 +139,7 @@ export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClo
             <div className="space-y-3">
               <div className="overflow-hidden rounded-2xl border border-[#2e313e] bg-[#15171c]">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#1e2027] text-gray-400 uppercase font-semibold text-[10px] border-b border-[#2e313e]">
+                  <thead className="bg-[#1e2027] text-gray-400 font-semibold text-[10px] border-b border-[#2e313e]">
                     <tr>
                       <th className="px-4 py-2.5">Nama Kolom</th>
                       <th className="px-4 py-2.5">Tipe Data</th>
@@ -152,7 +152,7 @@ export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClo
                       <tr key={col.name} className="hover:bg-[#1e212a] transition-colors">
                         <td className="px-4 py-2.5 font-bold text-gray-100 font-mono">{col.name}</td>
                         <td className="px-4 py-2.5 font-mono text-emerald-400">{col.type}</td>
-                        <td className="px-4 py-2.5 text-gray-400">{col.isNullable ? 'YES' : 'NO'}</td>
+                        <td className="px-4 py-2.5 text-gray-400">{col.isNullable ? 'Yes' : 'No'}</td>
                         <td className="px-4 py-2.5">
                           {col.isPk ? (
                             <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">

@@ -17,6 +17,155 @@
   }
 }
 
+/* Light mode styles when html.light or .light is active */
+html.light,
+.light {
+  color-scheme: light;
+}
+
+html.light body,
+.light .bg-\[\#121316\],
+.light .bg-\[\#141518\] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.light header.bg-\[\#18191d\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.light footer {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Cards & Containers in Light Mode */
+.light .bg-\[\#22242a\],
+.light .bg-\[\#22242d\],
+.light .bg-\[\#1f2128\],
+.light .bg-\[\#23252d\],
+.light .bg-\[\#22242c\],
+.light .bg-\[\#1d1f27\],
+.light .bg-\[\#1a1c23\],
+.light .bg-\[\#1a1c22\],
+.light .bg-\[\#18191d\],
+.light .bg-\[\#18191e\],
+.light .bg-\[\#16171a\],
+.light .bg-\[\#15171c\],
+.light .bg-\[\#121317\],
+.light .bg-\[\#1e2027\],
+.light .bg-\[\#14161c\],
+.light .bg-\[\#0f1014\],
+.light .bg-\[\#161820\],
+.light .bg-\[\#222530\],
+.light .bg-\[\#282b36\],
+.light .bg-\[\#2a2d3a\],
+.light .bg-\[\#313543\],
+.light .bg-\[\#1a1b20\],
+.light .bg-\[\#16171c\] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Light mode sub-surface element backgrounds (inputs, pills, secondary buttons) */
+.light .bg-\[\#14161c\],
+.light .bg-\[\#161820\],
+.light .bg-\[\#0f1014\],
+.light .bg-\[\#222530\] {
+  background-color: #f1f5f9 !important;
+}
+
+.light .hover\:bg-\[\#282a32\]:hover,
+.light .hover\:bg-\[\#2a2c36\]:hover,
+.light .hover\:bg-\[\#2b2d38\]:hover,
+.light .hover\:bg-\[\#2c2f3a\]:hover,
+.light .hover\:bg-\[\#282b35\]:hover,
+.light .hover\:bg-\[\#2e313b\]:hover,
+.light .hover\:bg-\[\#23252e\]:hover,
+.light .hover\:bg-\[\#1e212a\]:hover,
+.light .hover\:bg-\[\#323644\]:hover,
+.light .hover\:bg-\[\#343848\]:hover,
+.light .hover\:bg-\[\#1a1c23\]:hover,
+.light .hover\:bg-\[\#282b38\]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Borders in Light Mode */
+.light .border-\[\#272935\],
+.light .border-\[\#282b38\],
+.light .border-\[\#282a32\],
+.light .border-\[\#2b2e38\],
+.light .border-\[\#2e313c\],
+.light .border-\[\#2e313d\],
+.light .border-\[\#2e313e\],
+.light .border-\[\#23252e\],
+.light .border-\[\#2d303b\],
+.light .border-\[\#2d303c\],
+.light .border-\[\#323542\],
+.light .border-\[\#2e313b\],
+.light .border-\[\#2f323f\],
+.light .border-\[\#2a2d39\],
+.light .border-\[\#2c303c\],
+.light .border-\[\#292c37\],
+.light .border-\[\#363a49\],
+.light .border-\[\#363a4a\],
+.light .border-\[\#252834\],
+.light .border-\[\#2d303f\],
+.light .divide-\[\#232631\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Progress Ring stroke track */
+.light .stroke-\[\#353846\] {
+  stroke: #e2e8f0 !important;
+}
+
+/* Typography in Light Mode */
+.light .text-white,
+.light .text-gray-100,
+.light .text-gray-200,
+.light .text-gray-300 {
+  color: #0f172a !important;
+}
+
+.light .text-gray-400,
+.light .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Green icon backgrounds in Light Mode */
+.light .bg-\[\#0d2f21\] {
+  background-color: #d1fae5 !important;
+}
+
+/* Button & Badge backgrounds in Light Mode */
+.light .bg-\[\#2d303d\],
+.light .bg-\[\#22242e\],
+.light .bg-\[\#252834\],
+.light .bg-\[\#2c2f3c\] {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+/* Modals & Backdrop in Light Mode */
+.light .bg-\[\#1f2128\],
+.light .bg-\[\#1a1b20\],
+.light .bg-\[\#16171c\] {
+  background-color: #ffffff !important;
+}
+
+/* Scrollbar in Light Mode */
+.light .custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.light .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

@@ -76,28 +76,28 @@ export const QuotaMetricsCard: React.FC<QuotaMetricsCardProps> = ({
   const quotaItems = [
     {
       id: 'egress',
-      label: 'EGRESS',
+      label: 'Egress',
       value: `${egressMb} MB`,
       limit: '5 GB',
       percentage: egressPct,
     },
     {
       id: 'db_size',
-      label: 'DATABASE SIZE',
+      label: 'Database Size',
       value: `${dbSizeMb} MB`,
       limit: '500 MB',
       percentage: dbPct,
     },
     {
       id: 'mau',
-      label: 'MONTHLY ACTIVE USERS',
+      label: 'Monthly Active Users',
       value: `${mau.toLocaleString()}`,
       limit: '50,000',
       percentage: mauPct,
     },
     {
       id: 'storage',
-      label: 'FILE STORAGE',
+      label: 'File Storage',
       value: `${storageGb} GB`,
       limit: '1 GB',
       percentage: storagePct,
@@ -115,10 +115,10 @@ export const QuotaMetricsCard: React.FC<QuotaMetricsCardProps> = ({
               index !== 0 ? 'pt-3.5 border-t border-dashed border-[#282b38]' : ''
             }`}
           >
-            {/* Left: Progress Ring + Uppercase Label */}
+            {/* Left: Progress Ring + Title Case Label */}
             <div className="flex items-center space-x-3 truncate pr-2">
               <ProgressRing percentage={item.percentage} size={20} strokeWidth={2.5} />
-              <span className="text-[11px] sm:text-xs font-semibold tracking-wider text-gray-300 uppercase truncate">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-300 truncate">
                 {item.label}
               </span>
             </div>
