@@ -26,7 +26,9 @@ jobs:
           npm -v
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          npm ci
 
       - name: Install Capacitor Android
         run: npm install @capacitor/android@latest --save
@@ -44,6 +46,37 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Verify Gradle Wrapper
+        run: |
+          if [ ! -f "android/gradlew" ]; then
+            echo "Error: android/gradlew file missing!"
+            exit 1
+          fi
+          if [ ! -s "android/gradlew" ]; then
+            echo "Error: android/gradlew file is empty or corrupted!"
+            exit 1
+          fi
+          chmod +x android/gradlew
+
+      - name: Verify Gradle Wrapper JAR
+        run: |
+          JAR_PATH="android/gradle/wrapper/gradle-wrapper.jar"
+          echo "Checking $JAR_PATH..."
+          
+          if [ ! -f "$JAR_PATH" ] || [ ! -s "$JAR_PATH" ] || ! unzip -t "$JAR_PATH" >/dev/null 2>&1; then
+            echo "Gradle wrapper JAR is missing or corrupted. Re-downloading..."
+            mkdir -p android/gradle/wrapper
+            curl -sSL "https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar" -o "$JAR_PATH" || \
+            curl -sSL "https://repo.gradle.org/gradle/libs-releases-local/org/gradle/gradle-wrapper/8.14.3/gradle-wrapper-8.14.3.jar" -o "$JAR_PATH"
+          fi
+
+          if [ -s "$JAR_PATH" ]; then
+            echo "Gradle wrapper JAR verified successfully."
+          else
+            echo "Error: Failed to verify or restore gradle-wrapper.jar"
+            exit 1
+          fi
 
       - name: Sync Capacitor
         run: npx cap sync android
