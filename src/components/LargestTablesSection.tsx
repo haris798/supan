@@ -10,12 +10,14 @@ interface LargestTablesSectionProps {
   history?: MetricHistoryPoint[];
 }
 
-// Micro Sparkline Chart component for rendering 24h traffic trends
+// Micro Sparkline Chart component for rendering 24h traffic trends (with hover tooltip)
 const TableSparkline: React.FC<{
   table: TableInfo;
   history?: MetricHistoryPoint[];
   isHighActivity: boolean;
 }> = ({ table, history, isHighActivity }) => {
+  const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
+
   const nameHash = React.useMemo(() => {
     return table.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   }, [table.name]);
@@ -57,9 +59,37 @@ const TableSparkline: React.FC<{
   const gradientId = `spark-grad-${table.id.replace(/[^a-zA-Z0-9]/g, '-')}`;
   const strokeColor = isHighActivity ? '#34d399' : '#94a3b8'; // emerald-400 vs slate-400
 
+  const hovered = hoverIndex !== null ? dataPoints[hoverIndex] : null;
+  const hoverX = hoverIndex !== null
+    ? ((hoverIndex / (dataPoints.length - 1)) * (width - padding * 2) + padding).toFixed(1)
+    : null;
+  const hoverY = hovered !== null
+    ? (height - padding - ((hovered - min) / range) * (height - padding * 2)).toFixed(1)
+    : null;
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const viewX = ((e.clientX - rect.left) / rect.width) * width;
+    const clamped = Math.min(Math.max(viewX, padding), width - padding);
+    const idx = Math.round(((clamped - padding) / (width - padding * 2)) * (dataPoints.length - 1));
+    setHoverIndex(Math.max(0, Math.min(dataPoints.length - 1, idx)));
+  };
+
+  const handleMouseLeave = () => setHoverIndex(null);
+
   return (
-    <div className="flex flex-col items-end shrink-0 ml-2 group-hover:scale-105 transition-transform" title="Trafik 24 jam terakhir">
-      <svg width={width} height={height} className="overflow-visible">
+    <div
+      className="relative flex flex-col items-end shrink-0 ml-2 group-hover:scale-105 transition-transform"
+      title="Trafik 24 jam terakhir"
+    >
+      <svg
+        width={width}
+        height={height}
+        className="overflow-visible cursor-crosshair"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={strokeColor} stopOpacity={0.35} />
@@ -82,7 +112,41 @@ const TableSparkline: React.FC<{
           fill={strokeColor}
           className={isHighActivity ? 'animate-pulse' : ''}
         />
+
+        {/* Hover crosshair + point indicator */}
+        {hoverIndex !== null && hoverX !== null && hoverY !== null && (
+          <g pointerEvents="none">
+            <line
+              x1={hoverX}
+              x2={hoverX}
+              y1={padding}
+              y2={height - padding}
+              stroke="#64748b"
+              strokeWidth="1"
+              strokeDasharray="2 2"
+              opacity="0.8"
+            />
+            <circle cx={hoverX} cy={hoverY} r="2.5" fill={strokeColor} stroke="#0f1014" strokeWidth="1" />
+          </g>
+        )}
       </svg>
+
+      {/* Tooltip bubble */}
+      {hoverIndex !== null && hovered !== null && (
+        <div
+          className="absolute top-0 -translate-x-1/2 -translate-y-full pointer-events-none z-20 px-2 py-1 rounded-lg bg-[#232631] border border-[#3a3f52] shadow-lg shadow-black/40 whitespace-nowrap"
+          style={{ left: `${(hoverIndex / (dataPoints.length - 1)) * 100}%` }}
+        >
+          <div className="text-[8px] font-mono text-gray-400 uppercase tracking-wide">
+            {history && history[hoverIndex]?.timeLabel ? history[hoverIndex].timeLabel : `Jam ${hoverIndex}`}
+          </div>
+          <div className={`text-[10px] font-bold ${isHighActivity ? 'text-emerald-400' : 'text-gray-200'}`}>
+            {hovered.toLocaleString()}
+            <span className="text-gray-500 font-medium"> trafik</span>
+          </div>
+        </div>
+      )}
+
       <span className="text-[9px] font-mono font-medium text-gray-500 mt-0.5 tracking-tight">
         24h trend
       </span>
