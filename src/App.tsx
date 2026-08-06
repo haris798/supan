@@ -69,6 +69,7 @@ const defaultTables: TableInfo[] = [
     primaryKey: 'id',
     activityLevel: 'high',
     description: 'Location and GIS tracking points',
+    growth24hMb: 3.2,
     columns: [
       { name: 'id', type: 'uuid', isNullable: false, isPk: true },
       { name: 'name', type: 'text', isNullable: false, isPk: false },
@@ -87,6 +88,7 @@ const defaultTables: TableInfo[] = [
     primaryKey: 'id',
     activityLevel: 'high',
     description: 'Active authentication user sessions',
+    growth24hMb: 1.8,
     columns: [
       { name: 'id', type: 'uuid', isNullable: false, isPk: true },
       { name: 'user_id', type: 'uuid', isNullable: false, isPk: false },
@@ -104,6 +106,7 @@ const defaultTables: TableInfo[] = [
     primaryKey: 'id',
     activityLevel: 'high',
     description: 'System-wide activity and security audit entries',
+    growth24hMb: 2.1,
     columns: [
       { name: 'id', type: 'uuid', isNullable: false, isPk: true },
       { name: 'event', type: 'text', isNullable: false, isPk: false }
@@ -120,6 +123,7 @@ const defaultTables: TableInfo[] = [
     primaryKey: 'srid',
     activityLevel: 'low',
     description: 'PostGIS spatial reference systems data',
+    growth24hMb: 0,
     columns: [
       { name: 'srid', type: 'integer', isNullable: false, isPk: true },
       { name: 'auth_name', type: 'text', isNullable: true, isPk: false }
@@ -135,7 +139,8 @@ const defaultTables: TableInfo[] = [
     columnsCount: 4,
     primaryKey: 'key',
     activityLevel: 'low',
-    description: 'Application feature flags and config parameters'
+    description: 'Application feature flags and config parameters',
+    growth24hMb: 0.4
   },
   {
     id: 'app_categories',
@@ -147,7 +152,8 @@ const defaultTables: TableInfo[] = [
     columnsCount: 3,
     primaryKey: 'id',
     activityLevel: 'low',
-    description: 'Static category lookup taxonomy'
+    description: 'Static category lookup taxonomy',
+    growth24hMb: 0.1
   }
 ];
 
@@ -162,7 +168,8 @@ const defaultHistory: MetricHistoryPoint[] = Array.from({ length: 24 }).map((_, 
     auth: Math.floor(baseRest * 0.12),
     connections: 14 + Math.floor(Math.sin(i / 3) * 6),
     cacheHit: 98.4 + Math.sin(i / 2) * 0.8,
-    dbSizeMb: 34.2 + (i * 0.15)
+    dbSizeMb: 34.2 + (i * 0.15),
+    dbGrowthMb: +(0.15 + Math.sin(i / 2.5) * 0.08).toFixed(2)
   };
 });
 
@@ -292,6 +299,7 @@ export default function App() {
                 columnsCount: Object.keys(payload.new || payload.old || {}).length,
                 primaryKey: 'id',
                 description: 'Auto-detected via realtime',
+                growth24hMb: 0,
                 columns: [],
                 sampleData: payload.new ? [payload.new] : []
               };
@@ -348,6 +356,14 @@ export default function App() {
       if (!connectionConfig.isConnected) return;
       
       try {
+        // Best-effort: record a size snapshot so 24h growth can be computed.
+        // No-op if the snapshot_table_sizes function isn't installed yet.
+        try {
+          await supabase.rpc('snapshot_table_sizes');
+        } catch (snapErr) {
+          console.warn('snapshot_table_sizes not available:', snapErr);
+        }
+
         const { data: tablesData, error: tablesError } = await supabase.rpc('get_largest_tables');
         
         if (tablesError) {

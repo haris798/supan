@@ -1,7 +1,7 @@
 import React from 'react';
-import { Menu, LayoutGrid, ArrowUpRight, Zap, Activity } from 'lucide-react';
+import { Menu, LayoutGrid, ArrowUpRight, Zap, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import { TableInfo, MetricHistoryPoint } from '../types';
-import { formatTableSize } from '../utils';
+import { formatTableSize, formatGrowthMb } from '../utils';
 
 interface LargestTablesSectionProps {
   tables: TableInfo[];
@@ -192,6 +192,27 @@ export const LargestTablesSection: React.FC<LargestTablesSectionProps> = ({
                   <span className="block text-[11px] font-medium text-gray-400 truncate mt-0.5">
                     {table.schema} · {formatTableSize(table.formattedSize, table.sizeBytes)}
                   </span>
+
+                  {/* 24h growth badge */}
+                  {typeof table.growth24hMb === 'number' && (
+                    <span
+                      className={`inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${
+                        table.growth24hMb > 0.05
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : table.growth24hMb < -0.05
+                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                          : 'bg-slate-500/10 text-slate-400 border-slate-500/25'
+                      }`}
+                      title="Growth ukuran tabel dalam 24 jam terakhir"
+                    >
+                      {table.growth24hMb > 0.05 ? (
+                        <TrendingUp className="w-2.5 h-2.5" />
+                      ) : table.growth24hMb < -0.05 ? (
+                        <TrendingDown className="w-2.5 h-2.5" />
+                      ) : null}
+                      {formatGrowthMb(table.growth24hMb)} <span className="opacity-60 font-normal">/ 24h</span>
+                    </span>
+                  )}
                 </div>
               </div>
 

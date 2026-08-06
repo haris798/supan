@@ -1,4 +1,59 @@
--- 1. Function to get largest tables
+-- 0. History table for tracking table size growth (powers the 24h growth metric).
+-- Run this once. The snapshot_table_sizes() function must be called periodically
+-- (the dashboard calls it automatically on refresh, or set up pg_cron — see 0c) so
+-- that after ~24h you get real growth numbers.
+CREATE TABLE IF NOT EXISTS table_size_history (
+  table_schema text NOT NULL,
+  table_name text NOT NULL,
+  size_bytes bigint NOT NULL,
+  captured_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_table_size_history_lookup
+  ON table_size_history (table_schema, table_name, captured_at);
+
+-- 0b. Snapshot current table sizes (call every few minutes/hours).
+CREATE OR REPLACE FUNCTION snapshot_table_sizes()
+RETURNS void AS $$
+BEGIN
+  INSERT INTO table_size_history (table_schema, table_name, size_bytes)
+  SELECT t.table_schema, t.table_name,
+         pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')
+  FROM information_schema.tables t
+  WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE'
+    AND NOT EXISTS (
+      SELECT 1 FROM table_size_history h
+      WHERE h.table_schema = t.table_schema
+        AND h.table_name = t.table_name
+        AND h.captured_at > now() - interval '10 minutes'
+    );
+
+  -- Keep only the last ~48h of history (enough for the 24h growth metric).
+  DELETE FROM table_size_history WHERE captured_at < now() - interval '2 days';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 0c. OPTIONAL but recommended: auto-run snapshot_table_sizes() every 10 minutes
+-- using pg_cron (available on all Supabase projects). Run this once in the SQL Editor.
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Schedule the job (job name + cron expression + the function call).
+-- '*/10 * * * *' = every 10 minutes.
+SELECT cron.schedule(
+  'snapshot-table-sizes',
+  '*/10 * * * *',
+  $$SELECT snapshot_table_sizes()$$
+);
+
+-- Verify the job was created:
+-- SELECT * FROM cron.job WHERE jobname = 'snapshot-table-sizes';
+
+-- Check recent runs / any errors:
+-- SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 5;
+
+-- To remove the job later:
+-- SELECT cron.unschedule('snapshot-table-sizes');
+
+-- 1. Function to get largest tables (now includes growth24hMb)
 CREATE OR REPLACE FUNCTION get_largest_tables()
 RETURNS json AS $$
 DECLARE
@@ -9,19 +64,30 @@ BEGIN
       'id', t.table_name,
       'name', t.table_name,
       'schema', t.table_schema,
-      'sizeBytes', pg_total_relation_size('"' || t.table_schema || '"."' || t.table_name || '"'),
-      'formattedSize', pg_size_pretty(pg_total_relation_size('"' || t.table_schema || '"."' || t.table_name || '"')),
+      'sizeBytes', pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"'),
+      'formattedSize', pg_size_pretty(pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')),
       'estimatedRows', (SELECT reltuples::bigint FROM pg_class WHERE relname = t.table_name LIMIT 1),
       'columnsCount', (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name),
       'primaryKey', 'id',
       'description', 'Real table from Supabase',
+      'growth24hMb', (
+        -- MB grown in the last 24h: current size minus size ~24h ago (closest snapshot).
+        SELECT round(
+          (pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')
+           - (SELECT h.size_bytes FROM table_size_history h
+              WHERE h.table_schema = t.table_schema
+                AND h.table_name = t.table_name
+                AND h.captured_at <= now() - interval '23 hours'
+              ORDER BY h.captured_at DESC
+              LIMIT 1))::numeric / 1048576, 2)
+      ),
       'columns', '[]'::json,
       'sampleData', '[]'::json
     )
   ) INTO result
   FROM information_schema.tables t
   WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE';
-  
+
   RETURN coalesce(result, '[]'::json);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

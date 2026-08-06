@@ -41,6 +41,7 @@ export interface TableInfo {
   columns?: { name: string; type: string; isNullable: boolean; isPk: boolean }[];
   sampleData?: Record<string, any>[];
   activityLevel?: 'high' | 'medium' | 'low';
+  growth24hMb?: number; // e.g. 2.4 (MB growth in the last 24 hours)
 }
 
 export interface MetricHistoryPoint {
@@ -51,6 +52,7 @@ export interface MetricHistoryPoint {
   connections: number;
   cacheHit: number;
   dbSizeMb: number;
+  dbGrowthMb?: number; // e.g. 0.15 (MB grown in the last hour, from dbSizeMb deltas)
 }
 
 export interface DatabaseErrorLog {
