@@ -26,6 +26,7 @@ export interface AnalyticsOverview {
   activeQueries: number;
   cpuUsagePct: number;
   memoryUsagePct: number;
+  dbGrowth24hMb?: number; // e.g. 3.2 (total DB growth in MB over the last 24h)
 }
 
 export interface TableInfo {

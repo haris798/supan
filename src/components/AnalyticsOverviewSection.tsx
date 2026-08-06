@@ -1,6 +1,7 @@
 import React from 'react';
-import { Menu, Database, Link2, Gauge, LayoutGrid, ChevronRight } from 'lucide-react';
+import { Menu, Database, Link2, Gauge, LayoutGrid, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { AnalyticsOverview } from '../types';
+import { formatGrowthMb } from '../utils';
 
 interface AnalyticsOverviewSectionProps {
   analytics: AnalyticsOverview;
@@ -104,6 +105,39 @@ export const AnalyticsOverviewSection: React.FC<AnalyticsOverviewSectionProps> =
             <span className="block text-xs font-medium text-gray-400 truncate">Tables</span>
           </div>
         </div>
+      </div>
+
+      {/* Card 5: Total DB growth (24h) — full width */}
+      <div
+        onClick={() => onOpenCardDetail && onOpenCardDetail('DB growth')}
+        className="mt-3 bg-[#22242a] hover:bg-[#282a32] border border-[#2b2e38] p-3.5 rounded-2xl flex items-center justify-between space-x-3 transition-all cursor-pointer shadow-sm group"
+      >
+        <div className="flex items-center space-x-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-2xl bg-[#0d2f21] group-hover:bg-[#113a29] flex items-center justify-center text-[#00e676] shrink-0 transition-colors">
+            <TrendingUp className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span
+              className={`block text-base sm:text-lg font-bold tracking-wide truncate ${
+                (analytics.dbGrowth24hMb ?? 0) > 0.05
+                  ? 'text-emerald-400'
+                  : (analytics.dbGrowth24hMb ?? 0) < -0.05
+                  ? 'text-rose-400'
+                  : 'text-white'
+              }`}
+            >
+              {formatGrowthMb(analytics.dbGrowth24hMb ?? 0)}
+            </span>
+            <span className="block text-xs font-medium text-gray-400 truncate">DB growth (24h)</span>
+          </div>
+        </div>
+        {(analytics.dbGrowth24hMb ?? 0) > 0.05 ? (
+          <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+        ) : (analytics.dbGrowth24hMb ?? 0) < -0.05 ? (
+          <TrendingDown className="w-4 h-4 text-rose-400 shrink-0 animate-pulse" />
+        ) : (
+          <TrendingUp className="w-4 h-4 text-gray-600 shrink-0" />
+        )}
       </div>
     </div>
   );

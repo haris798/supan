@@ -55,6 +55,7 @@ const emptyAnalytics: AnalyticsOverview = {
   activeQueries: 0,
   cpuUsagePct: 0,
   memoryUsagePct: 0,
+  dbGrowth24hMb: 0,
 };
 
 const defaultTables: TableInfo[] = [
@@ -407,6 +408,7 @@ export default function App() {
             dbSizeBytes: d.dbSizeBytes || prev.dbSizeBytes,
             connectionsCount: d.connectionsCount || prev.connectionsCount,
             tablesCount: d.tablesCount || prev.tablesCount,
+            dbGrowth24hMb: typeof d.dbGrowth24hMb === 'number' ? d.dbGrowth24hMb : prev.dbGrowth24hMb,
           }));
           setMetrics(prev => ({
             ...prev,
@@ -438,6 +440,16 @@ export default function App() {
 
 
 
+  // Fallback for total DB growth: derive from history dbSizeMb deltas when no real value
+  const analyticsWithGrowth = React.useMemo(() => {
+    if (typeof analytics.dbGrowth24hMb === 'number' && analytics.dbGrowth24hMb !== 0) {
+      return analytics;
+    }
+    const first = history[0]?.dbSizeMb ?? 0;
+    const last = history[history.length - 1]?.dbSizeMb ?? 0;
+    return { ...analytics, dbGrowth24hMb: +(last - first).toFixed(2) };
+  }, [analytics, history]);
+
   return (
     <div className={`min-h-screen ${theme === 'light' ? 'light bg-slate-100 text-slate-900' : 'bg-[#121316] text-gray-100'} flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-black transition-colors duration-200`}>
       {/* App Top Navigation Header */}
@@ -464,7 +476,7 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
               <AnalyticsOverviewSection
-                analytics={analytics}
+                analytics={analyticsWithGrowth}
                 onSeeMore={() => setIsAnalyticsModalOpen(true)}
                 onOpenCardDetail={() => setIsAnalyticsModalOpen(true)}
               />
