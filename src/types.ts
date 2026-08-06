@@ -42,6 +42,7 @@ export interface TableInfo {
   sampleData?: Record<string, any>[];
   activityLevel?: 'high' | 'medium' | 'low';
   growth24hMb?: number; // e.g. 2.4 (MB growth in the last 24 hours)
+  sizeHistory?: { capturedAt: string; sizeBytes: number }[]; // per-hour snapshots (last 24h)
 }
 
 export interface MetricHistoryPoint {

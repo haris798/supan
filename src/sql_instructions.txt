@@ -92,6 +92,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 1b. Function to get per-hour size history for one table (powers the sparkline in
+-- the table detail modal). Returns the latest snapshot per hour bucket for the last 24h.
+CREATE OR REPLACE FUNCTION get_table_size_history(p_schema text, p_table text)
+RETURNS json AS $$
+DECLARE
+  result json;
+BEGIN
+  SELECT coalesce(json_agg(
+    json_build_object(
+      'capturedAt', h.captured_at,
+      'sizeBytes', h.size_bytes
+    ) ORDER BY h.captured_at
+  ), '[]'::json) INTO result
+  FROM (
+    SELECT DISTINCT ON (date_trunc('hour', captured_at))
+           date_trunc('hour', captured_at) AS captured_at,
+           size_bytes
+    FROM table_size_history
+    WHERE table_schema = p_schema
+      AND table_name = p_table
+      AND captured_at >= now() - interval '24 hours'
+    ORDER BY date_trunc('hour', captured_at) DESC, captured_at DESC
+  ) h;
+
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 2. Function to get real dashboard metrics
 CREATE OR REPLACE FUNCTION get_dashboard_metrics()
 RETURNS json AS $$

@@ -340,6 +340,30 @@ export default function App() {
     };
   }, [connectionConfig.isConnected]);
 
+  // Fetch real per-hour size history for a table when it is selected
+  const handleSelectTable = React.useCallback(async (t: TableInfo) => {
+    setSelectedTable(t);
+
+    if (!connectionConfig.isConnected) return;
+    try {
+      const { data: historyData, error: historyError } = await supabase.rpc('get_table_size_history', {
+        p_schema: t.schema,
+        p_table: t.name,
+      });
+      if (historyError) {
+        console.warn('Could not fetch table size history via RPC.', historyError);
+        return;
+      }
+      if (Array.isArray(historyData) && historyData.length > 0) {
+        setSelectedTable((prev) =>
+          prev && prev.id === t.id ? { ...prev, sizeHistory: historyData } : prev
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to fetch table size history:', err);
+    }
+  }, [connectionConfig.isConnected]);
+
   // Manual & Auto Refresh logic
   const handleTriggerRefresh = React.useCallback(() => {
     setIsRefreshing(true);
@@ -453,7 +477,7 @@ export default function App() {
             <div className="space-y-6">
               <LargestTablesSection
                 tables={largestTables}
-                onSelectTable={(t) => setSelectedTable(t)}
+                onSelectTable={handleSelectTable}
                 onOpenMenu={() => setIsConfigModalOpen(true)}
                 history={history}
               />

@@ -1,12 +1,123 @@
 import React from 'react';
-import { X, LayoutGrid, Key, Database, Copy, Check, Table as TableIcon, Code, Layers } from 'lucide-react';
+import { X, LayoutGrid, Key, Database, Copy, Check, Table as TableIcon, Code, Layers, TrendingUp, TrendingDown } from 'lucide-react';
 import { TableInfo } from '../types';
-import { formatTableSize } from '../utils';
+import { formatTableSize, formatGrowthMb } from '../utils';
 
 interface TableDetailModalProps {
   table: TableInfo | null;
   onClose: () => void;
 }
+
+// Mini sparkline chart showing cumulative 24h growth.
+// Uses real per-hour snapshots from table_size_history when available,
+// otherwise falls back to a deterministic synthetic series ending at growth24hMb.
+const GrowthSparkline: React.FC<{ table: TableInfo }> = ({ table }) => {
+  const { dataPoints, labels, isReal } = React.useMemo(() => {
+    const history = table.sizeHistory;
+    if (history && history.length >= 2) {
+      // Real snapshots: cumulative growth in MB relative to the first snapshot
+      const base = history[0].sizeBytes;
+      const points = history.map((h) => +(((h.sizeBytes - base) / 1048576)).toFixed(3));
+      const timeLabels = history.map((h) =>
+        new Date(h.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      );
+      return { dataPoints: points, labels: timeLabels, isReal: true };
+    }
+
+    // Fallback: deterministic per-table series (seeded noise, ends at growth24hMb)
+    const nameHash = table.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const target = table.growth24hMb ?? 0;
+    const points = Array.from({ length: 24 }, (_, i) => {
+      const noise = Math.sin((i + nameHash) * 0.7) * 0.02 + Math.cos(i * 0.4) * 0.012;
+      const progress = (i + 1) / 24;
+      return +(target * progress + noise * Math.abs(target)).toFixed(3);
+    });
+    return { dataPoints: points, labels: null, isReal: false };
+  }, [table.name, table.growth24hMb, table.sizeHistory]);
+
+  const min = Math.min(...dataPoints);
+  const max = Math.max(...dataPoints);
+  const range = max - min || 1;
+
+  const width = 600;
+  const height = 64;
+  const padding = 8;
+
+  const points = dataPoints.map((val, index) => {
+    const x = (index / (dataPoints.length - 1)) * (width - padding * 2) + padding;
+    const y = height - padding - ((val - min) / range) * (height - padding * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
+  const pathD = `M ${points.join(' L ')}`;
+  const areaD = `${pathD} L ${(width - padding).toFixed(1)},${height} L ${padding},${height} Z`;
+
+  const isPositive = (table.growth24hMb ?? 0) > 0.05;
+  const isNegative = (table.growth24hMb ?? 0) < -0.05;
+  const strokeColor = isPositive ? '#34d399' : isNegative ? '#fb7185' : '#94a3b8';
+
+  return (
+    <div className="mb-4 p-4 rounded-2xl bg-[#15171c] border border-[#2c303d]">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] font-semibold text-gray-400 flex items-center space-x-1.5">
+          {isPositive ? (
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+          ) : isNegative ? (
+            <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+          ) : null}
+          <span>Pertumbuhan Ukuran — 24 Jam Terakhir</span>
+          {isReal && (
+            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[9px] font-bold uppercase tracking-wide">
+              Riwayat Nyata
+            </span>
+          )}
+        </span>
+        <span
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+            isPositive
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              : isNegative
+              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+              : 'bg-slate-500/10 text-slate-400 border-slate-500/25'
+          }`}
+        >
+          {formatGrowthMb(table.growth24hMb ?? 0)}
+        </span>
+      </div>
+
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-14" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`grow-grad-${table.id.replace(/[^a-zA-Z0-9]/g, '-')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={strokeColor} stopOpacity={0.35} />
+            <stop offset="100%" stopColor={strokeColor} stopOpacity={0.0} />
+          </linearGradient>
+        </defs>
+        <path d={areaD} fill={`url(#grow-grad-${table.id.replace(/[^a-zA-Z0-9]/g, '-')})`} />
+        <path
+          d={pathD}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle
+          cx={(width - padding).toFixed(1)}
+          cy={(height - padding - ((dataPoints[dataPoints.length - 1] - min) / range) * (height - padding * 2)).toFixed(1)}
+          r="3"
+          fill={strokeColor}
+          className={isPositive || isNegative ? 'animate-pulse' : ''}
+        />
+      </svg>
+
+      <div className="flex items-center justify-between mt-1.5 text-[10px] font-mono text-gray-500">
+        <span>{labels ? labels[0] : '0h'}</span>
+        <span className="text-emerald-400/80">+{max.toFixed(2)} MB (puncak)</span>
+        <span>{labels ? labels[labels.length - 1] : '24h'}</span>
+      </div>
+    </div>
+  );
+};
 
 export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClose }) => {
   const [copiedSql, setCopiedSql] = React.useState(false);
@@ -42,6 +153,28 @@ export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClo
               <p className="text-xs text-gray-400 mt-0.5">
                 Ukuran: <strong className="text-gray-200">{formatTableSize(table.formattedSize, table.sizeBytes)}</strong> • Estimasi Baris: <strong className="text-gray-200">{table.estimatedRows.toLocaleString()}</strong>
               </p>
+
+              {/* 24h growth badge */}
+              {typeof table.growth24hMb === 'number' && (
+                <span
+                  className={`inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                    table.growth24hMb > 0.05
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : table.growth24hMb < -0.05
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      : 'bg-slate-500/10 text-slate-400 border-slate-500/25'
+                  }`}
+                  title="Growth ukuran tabel dalam 24 jam terakhir"
+                >
+                  {table.growth24hMb > 0.05 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : table.growth24hMb < -0.05 ? (
+                    <TrendingDown className="w-3 h-3" />
+                  ) : null}
+                  <span className="opacity-70 font-medium">Growth 24h:</span>
+                  {formatGrowthMb(table.growth24hMb)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -94,6 +227,9 @@ export const TableDetailModal: React.FC<TableDetailModalProps> = ({ table, onClo
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+          {/* 24h growth sparkline (always visible when growth data exists) */}
+          {typeof table.growth24hMb === 'number' && <GrowthSparkline table={table} />}
+
           {activeTab === 'data' && (
             <div className="space-y-3">
               {table.description && (
