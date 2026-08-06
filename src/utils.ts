@@ -28,7 +28,7 @@ export function formatTableSize(formattedSize: string, sizeBytes?: number): stri
 
 export function formatGrowthMb(mb: number): string {
   const abs = Math.abs(mb);
-  if (abs < 0.05) return '0 MB';
+  if (abs <= 0.05) return '0 MB';
   if (abs < 10) return `${(mb > 0 ? '+' : '-') + abs.toFixed(1)} MB`;
   return `${(mb > 0 ? '+' : '-') + Math.round(abs)} MB`;
 }
