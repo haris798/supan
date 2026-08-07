@@ -19,8 +19,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          cache: 'npm'
 
-      - name: Verify Node
+      - name: Verify Node Environment
         run: |
           node -v
           npm -v
@@ -38,6 +39,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -46,10 +48,6 @@ jobs:
         run: |
           if [ ! -f "android/gradlew" ]; then
             echo "Error: android/gradlew file missing!"
-            exit 1
-          fi
-          if [ ! -s "android/gradlew" ]; then
-            echo "Error: android/gradlew file is empty or corrupted!"
             exit 1
           fi
           chmod +x android/gradlew
@@ -80,27 +78,33 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
-      - name: Read App Name
+      - name: Set App Name
         run: |
           APP_NAME="Supan"
           SAFE_NAME=$(echo "$APP_NAME" | sed 's/[^a-zA-Z0-9._-]/_/g')
           echo "APP_NAME=$SAFE_NAME" >> $GITHUB_ENV
 
-      - name: Rename APK
+      - name: Prepare APK Artifact
         run: |
-          APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          APK=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "$APK" ]; then
+            APK=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+          fi
 
           if [ -z "$APK" ]; then
-            echo "APK tidak ditemukan!"
+            echo "Error: APK build output not found!"
             exit 1
           fi
 
-          cp "$APK" "android/app/build/outputs/apk/${{ env.APP_NAME }}.apk"
+          echo "Found APK at: $APK"
+          mkdir -p dist_apk
+          cp "$APK" "dist_apk/${{ env.APP_NAME }}.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}
-          path: android/app/build/outputs/apk/${{ env.APP_NAME }}.apk
+          name: ${{ env.APP_NAME }}-APK
+          path: dist_apk/${{ env.APP_NAME }}.apk
+
