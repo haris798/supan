@@ -26,12 +26,7 @@ jobs:
           npm -v
 
       - name: Install Dependencies
-        run: |
-          npm install
-          npm ci
-
-      - name: Install Capacitor Android
-        run: npm install @capacitor/android@latest --save
+        run: npm ci
 
       - name: Build Web Application
         env:
@@ -102,7 +97,7 @@ jobs:
             exit 1
           fi
 
-          cp "$APK" "android/app/build/outputs/apk/${APP_NAME}.apk"
+          cp "$APK" "android/app/build/outputs/apk/${{ env.APP_NAME }}.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
