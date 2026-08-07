@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import {
   SupabaseProject,
+  SupabaseProjectProfile,
   UsageMetrics,
   AnalyticsOverview,
   TableInfo,
@@ -25,7 +26,14 @@ import { AnalyticsModal } from './components/AnalyticsModal';
 import { TableDetailModal } from './components/TableDetailModal';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 import { BuildApkModal } from './components/BuildApkModal';
-import { supabase } from './supabaseClient';
+import { QueryPerformanceModal } from './components/QueryPerformanceModal';
+import { getSupabaseClient } from './supabaseClient';
+import {
+  getMetricHistoryFromIDB,
+  saveMetricHistoryToIDB,
+  saveTableSnapshotsToIDB,
+  purgeOldHistoryFromIDB
+} from './historyStorage';
 
 const emptyProject: SupabaseProject = {
   id: 'connected-project',
@@ -174,10 +182,109 @@ const defaultHistory: MetricHistoryPoint[] = Array.from({ length: 24 }).map((_, 
   };
 });
 
+const defaultProfiles: SupabaseProjectProfile[] = [
+  {
+    id: 'proj_primary',
+    name: 'Primary Supabase (Production)',
+    projectUrl: 'https://pcoyvfhcniscynjkndlw.supabase.co',
+    anonKey: 'sb_publishable_4HYaHZhOIECG56Eccpe4sA_xj-Ecy9n',
+    region: 'ap-southeast-1 (Singapore)',
+    ref: 'pcoyvfhcniscynjkndlw',
+    status: 'Active'
+  },
+  {
+    id: 'proj_staging',
+    name: 'Staging Database',
+    projectUrl: 'https://xu4zztntzvgdfnfivgd535.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    region: 'us-east-1 (N. Virginia)',
+    ref: 'xu4zztntzvgdfnfivgd535',
+    status: 'Active'
+  }
+];
+
 export default function App() {
-  // State variables
-  const [projects, setProjects] = React.useState<SupabaseProject[]>([emptyProject]);
-  const [currentProject, setCurrentProject] = React.useState<SupabaseProject>(emptyProject);
+  // Multi-Project Profiles State
+  const [profiles, setProfiles] = React.useState<SupabaseProjectProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('supan_profiles');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load profiles:', e);
+    }
+    return defaultProfiles;
+  });
+
+  const [activeProjectId, setActiveProjectId] = React.useState<string>(() => {
+    const savedId = localStorage.getItem('supan_active_project_id');
+    if (savedId && profiles.some((p) => p.id === savedId)) return savedId;
+    return profiles[0]?.id || 'proj_primary';
+  });
+
+  const [isAddProjectMode, setIsAddProjectMode] = React.useState<boolean>(false);
+
+  // Derive Active Profile & Config
+  const activeProfile = React.useMemo(() => {
+    return profiles.find((p) => p.id === activeProjectId) || profiles[0] || defaultProfiles[0];
+  }, [profiles, activeProjectId]);
+
+  const currentProject: SupabaseProject = React.useMemo(() => ({
+    id: activeProfile.id,
+    name: activeProfile.name,
+    ref: activeProfile.ref || activeProfile.projectUrl.replace(/^https?:\/\//, '').split('.')[0],
+    region: activeProfile.region || 'ap-southeast-1',
+    ipAddress: '127.0.0.1',
+    createdAt: activeProfile.createdAt || '2026-08-01',
+    status: activeProfile.status || 'Active',
+    organization: activeProfile.organization || 'Personal',
+    databaseVersion: '15.1'
+  }), [activeProfile]);
+
+  const connectionConfig: SupabaseConnectionConfig = React.useMemo(() => ({
+    projectUrl: activeProfile.projectUrl,
+    anonKey: activeProfile.anonKey,
+    isConnected: true
+  }), [activeProfile]);
+
+  // Dynamic Supabase Client for active project
+  const activeSupabase = React.useMemo(() => {
+    return getSupabaseClient(activeProfile.projectUrl, activeProfile.anonKey);
+  }, [activeProfile.projectUrl, activeProfile.anonKey]);
+
+  // Handlers for profile management
+  const handleSelectActiveProject = React.useCallback((id: string) => {
+    setActiveProjectId(id);
+    localStorage.setItem('supan_active_project_id', id);
+  }, []);
+
+  const handleSaveProfile = React.useCallback((profile: SupabaseProjectProfile) => {
+    setProfiles((prev) => {
+      const exists = prev.some((p) => p.id === profile.id);
+      const updated = exists
+        ? prev.map((p) => (p.id === profile.id ? profile : p))
+        : [...prev, profile];
+      localStorage.setItem('supan_profiles', JSON.stringify(updated));
+      return updated;
+    });
+    setActiveProjectId(profile.id);
+    localStorage.setItem('supan_active_project_id', profile.id);
+  }, []);
+
+  const handleDeleteProfile = React.useCallback((id: string) => {
+    setProfiles((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      localStorage.setItem('supan_profiles', JSON.stringify(updated));
+      if (id === activeProjectId && updated.length > 0) {
+        setActiveProjectId(updated[0].id);
+        localStorage.setItem('supan_active_project_id', updated[0].id);
+      }
+      return updated;
+    });
+  }, [activeProjectId]);
+
   const [metrics, setMetrics] = React.useState<UsageMetrics>(emptyMetrics);
   const [analytics, setAnalytics] = React.useState<AnalyticsOverview>(emptyAnalytics);
   const [largestTables, setLargestTables] = React.useState<TableInfo[]>(defaultTables);
@@ -216,16 +323,39 @@ export default function App() {
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = React.useState<boolean>(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = React.useState<boolean>(false);
   const [isBuildApkModalOpen, setIsBuildApkModalOpen] = React.useState<boolean>(false);
+  const [isQueryModalOpen, setIsQueryModalOpen] = React.useState<boolean>(false);
   const [latencyMs, setLatencyMs] = React.useState<number | null>(null);
 
-  // Connection config
-  const [connectionConfig, setConnectionConfig] = React.useState<SupabaseConnectionConfig>({
-    projectUrl: 'https://pcoyvfhcniscynjkndlw.supabase.co',
-    anonKey: 'sb_publishable_4HYaHZhOIECG56Eccpe4sA_xj-Ecy9n',
-    isConnected: true
-  });
+  // Load IndexedDB history on boot
+  React.useEffect(() => {
+    async function loadIDBHistory() {
+      try {
+        const savedHistory = await getMetricHistoryFromIDB();
+        if (savedHistory && savedHistory.length > 0) {
+          setHistory(savedHistory);
+        }
+        await purgeOldHistoryFromIDB(30);
+      } catch (e) {
+        console.warn('Could not load IndexedDB history:', e);
+      }
+    }
+    loadIDBHistory();
+  }, []);
 
-  // Ping Latency
+  // Sync history & table snapshots to IndexedDB when updated
+  React.useEffect(() => {
+    if (history.length > 0) {
+      saveMetricHistoryToIDB(history);
+    }
+  }, [history]);
+
+  React.useEffect(() => {
+    if (largestTables.length > 0) {
+      saveTableSnapshotsToIDB(largestTables);
+    }
+  }, [largestTables]);
+
+  // Ping Latency for active project
   React.useEffect(() => {
     if (!connectionConfig.isConnected || !connectionConfig.projectUrl) {
       setLatencyMs(null);
@@ -262,11 +392,11 @@ export default function App() {
     };
   }, [connectionConfig.isConnected, connectionConfig.projectUrl, connectionConfig.anonKey]);
 
-  // Real-time Subscriptions
+  // Real-time Subscriptions for active project
   React.useEffect(() => {
     if (!connectionConfig.isConnected) return;
 
-    const channel = supabase
+    const channel = activeSupabase
       .channel('schema-db-changes')
       .on(
         'postgres_changes',
@@ -335,11 +465,11 @@ export default function App() {
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      activeSupabase.removeChannel(channel);
       setAnalytics(prev => ({...prev, connectionsCount: Math.max(0, prev.connectionsCount - 1)}));
       setMetrics(prev => ({...prev, realtimeConnections: Math.max(0, prev.realtimeConnections - 1)}));
     };
-  }, [connectionConfig.isConnected]);
+  }, [connectionConfig.isConnected, activeSupabase]);
 
   // Fetch real per-hour size history for a table when it is selected
   const handleSelectTable = React.useCallback(async (t: TableInfo) => {
@@ -347,7 +477,7 @@ export default function App() {
 
     if (!connectionConfig.isConnected) return;
     try {
-      const { data: historyData, error: historyError } = await supabase.rpc('get_table_size_history', {
+      const { data: historyData, error: historyError } = await activeSupabase.rpc('get_table_size_history', {
         p_schema: t.schema,
         p_table: t.name,
       });
@@ -363,13 +493,12 @@ export default function App() {
     } catch (err) {
       console.warn('Failed to fetch table size history:', err);
     }
-  }, [connectionConfig.isConnected]);
+  }, [connectionConfig.isConnected, activeSupabase]);
 
   // Manual & Auto Refresh logic
   const handleTriggerRefresh = React.useCallback(() => {
     setIsRefreshing(true);
 
-    // Placeholder for actual data fetch
     setTimeout(() => {
       setIsRefreshing(false);
       setCountdown(autoRefreshSec);
@@ -381,15 +510,13 @@ export default function App() {
       if (!connectionConfig.isConnected) return;
       
       try {
-        // Best-effort: record a size snapshot so 24h growth can be computed.
-        // No-op if the snapshot_table_sizes function isn't installed yet.
         try {
-          await supabase.rpc('snapshot_table_sizes');
+          await activeSupabase.rpc('snapshot_table_sizes');
         } catch (snapErr) {
           console.warn('snapshot_table_sizes not available:', snapErr);
         }
 
-        const { data: tablesData, error: tablesError } = await supabase.rpc('get_largest_tables');
+        const { data: tablesData, error: tablesError } = await activeSupabase.rpc('get_largest_tables');
         
         if (tablesError) {
           console.warn("Could not fetch real tables via RPC.", tablesError);
@@ -397,7 +524,7 @@ export default function App() {
           setLargestTables(tablesData.sort((a, b) => b.sizeBytes - a.sizeBytes).slice(0, 4));
         }
 
-        const { data: metricsData, error: metricsError } = await supabase.rpc('get_dashboard_metrics');
+        const { data: metricsData, error: metricsError } = await activeSupabase.rpc('get_dashboard_metrics');
 
         if (metricsError) {
           console.warn("Could not fetch dashboard metrics via RPC.", metricsError);
@@ -421,7 +548,7 @@ export default function App() {
     }
     
     fetchRealTables();
-  }, [connectionConfig.isConnected, handleTriggerRefresh]);
+  }, [connectionConfig.isConnected, activeSupabase, handleTriggerRefresh]);
 
   // Real-time Countdown timer effect
   React.useEffect(() => {
@@ -455,13 +582,24 @@ export default function App() {
       {/* App Top Navigation Header */}
       <Header
         currentProject={currentProject}
-        projects={projects}
-        onSelectProject={(p) => setCurrentProject(p)}
+        projects={profiles}
+        onSelectProject={(p) => handleSelectActiveProject(p.id)}
+        onOpenAddProject={() => {
+          setIsAddProjectMode(true);
+          setIsConfigModalOpen(true);
+        }}
         isRefreshing={isRefreshing}
         onRefresh={handleTriggerRefresh}
         autoRefreshSec={autoRefreshSec}
         countdown={countdown}
-        onOpenConfig={() => setIsConfigModalOpen(true)}
+        onOpenConfig={() => {
+          setIsAddProjectMode(false);
+          setIsConfigModalOpen(true);
+        }}
+        onOpenSimulator={() => {
+          setIsAddProjectMode(false);
+          setIsConfigModalOpen(true);
+        }}
         onOpenBuildApk={() => setIsBuildApkModalOpen(true)}
         isConnectedLive={connectionConfig.isConnected}
         latencyMs={latencyMs}
@@ -504,9 +642,21 @@ export default function App() {
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span>Supabase Real-time Monitoring Engine v2.4</span>
         </div>
+        <button
+          onClick={() => setIsQueryModalOpen(true)}
+          className="text-emerald-400 hover:text-emerald-300 font-medium underline flex items-center gap-1 transition-colors"
+        >
+          <Sparkles className="w-3.5 h-3.5" /> Query & Performance Insights
+        </button>
       </footer>
 
       {/* Modals & Drawers */}
+      <QueryPerformanceModal
+        isOpen={isQueryModalOpen}
+        onClose={() => setIsQueryModalOpen(false)}
+        analytics={analytics}
+        tables={largestTables}
+      />
       <AnalyticsModal
         isOpen={isAnalyticsModalOpen}
         onClose={() => setIsAnalyticsModalOpen(false)}
@@ -525,19 +675,16 @@ export default function App() {
 
       <SupabaseConfigModal
         isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-        config={connectionConfig}
-        onSaveConfig={(cfg) => {
-          setConnectionConfig(cfg);
+        onClose={() => {
           setIsConfigModalOpen(false);
+          setIsAddProjectMode(false);
         }}
-        onDisconnect={() => {
-          setConnectionConfig({
-            projectUrl: '',
-            anonKey: '',
-            isConnected: false
-          });
-        }}
+        profiles={profiles}
+        activeProjectId={activeProjectId}
+        onSelectActiveProject={handleSelectActiveProject}
+        onSaveProfile={handleSaveProfile}
+        onDeleteProfile={handleDeleteProfile}
+        initialAddMode={isAddProjectMode}
       />
 
       <BuildApkModal

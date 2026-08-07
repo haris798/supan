@@ -28,9 +28,7 @@ import {
   Tooltip,
   CartesianGrid,
   LineChart,
-  Line,
-  ComposedChart,
-  Legend
+  Line
 } from 'recharts';
 import {
   AnalyticsOverview,
@@ -234,20 +232,6 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
   const errorCount = logs.filter((l) => l.severity === 'ERROR').length;
   const warningCount = logs.filter((l) => l.severity === 'WARNING').length;
 
-  // Chart data with 24h growth (falls back to computing it from dbSizeMb deltas)
-  const chartData = history.map((pt, idx) => ({
-    ...pt,
-    dbGrowthMb: typeof pt.dbGrowthMb === 'number'
-      ? pt.dbGrowthMb
-      : idx === 0
-      ? 0
-      : +((history[idx].dbSizeMb ?? 0) - (history[idx - 1].dbSizeMb ?? 0)).toFixed(2),
-  }));
-
-  const totalGrowthMb = chartData.length > 1
-    ? +((chartData[chartData.length - 1].dbSizeMb ?? 0) - (chartData[0].dbSizeMb ?? 0)).toFixed(2)
-    : 0;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn">
       <div className="bg-[#1a1c22] border border-[#2e313d] rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden text-white">
@@ -295,10 +279,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
             <div className="bg-[#22242d] p-3.5 rounded-2xl border border-[#2c303c]">
               <span className="text-[11px] font-semibold text-gray-400">Database Size</span>
               <p className="text-lg font-bold text-white mt-0.5">{Math.round(analytics.dbSizeBytes / 1048576)} MB</p>
-              <span className={`text-[10px] font-medium ${totalGrowthMb >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {totalGrowthMb >= 0 ? '+' : ''}{totalGrowthMb} MB / 24h
-              </span>
-              <span className="text-[10px] text-gray-400 font-medium block mt-0.5">{analytics.tablesCount} Tabel terdaftar</span>
+              <span className="text-[10px] text-gray-400 font-medium">{analytics.tablesCount} Tabel terdaftar</span>
             </div>
 
             <div className="bg-[#22242d] p-3.5 rounded-2xl border border-[#2c303c]">
@@ -355,7 +336,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                     : 'bg-[#22242d] text-gray-400 hover:text-white'
                 }`}
               >
-                Ukuran DB & Growth
+                Ukuran DB (MB)
               </button>
               <button
                 onClick={() => setActiveTab('error_logs')}
@@ -630,7 +611,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                     <Area type="monotone" dataKey="cacheHit" stroke="#a855f7" strokeWidth={2.5} fillOpacity={1} fill="url(#colorCache)" name="Cache Hit %" />
                   </AreaChart>
                 ) : (
-                  <ComposedChart data={chartData}>
+                  <AreaChart data={history}>
                     <defs>
                       <linearGradient id="colorDb" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
@@ -639,32 +620,12 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#262935" />
                     <XAxis dataKey="timeLabel" stroke="#6b7280" fontSize={11} />
-                    <YAxis yAxisId="left" stroke="#6b7280" fontSize={11} />
-                    <YAxis yAxisId="right" orientation="right" stroke="#34d399" fontSize={11} />
+                    <YAxis stroke="#6b7280" fontSize={11} />
                     <Tooltip
                       contentStyle={{ backgroundColor: '#1f2128', borderColor: '#333746', borderRadius: '12px', color: '#fff' }}
                     />
-                    <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
-                    <Area
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="dbSizeMb"
-                      stroke="#3b82f6"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#colorDb)"
-                      name="Ukuran DB (MB)"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="dbGrowthMb"
-                      stroke="#34d399"
-                      strokeWidth={2}
-                      dot={{ r: 2.5, fill: '#34d399' }}
-                      name="Growth (MB)"
-                    />
-                  </ComposedChart>
+                    <Area type="monotone" dataKey="dbSizeMb" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorDb)" name="Ukuran DB (MB)" />
+                  </AreaChart>
                 )}
               </ResponsiveContainer>
             </div>

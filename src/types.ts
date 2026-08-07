@@ -10,6 +10,20 @@ export interface SupabaseProject {
   databaseVersion: string;
 }
 
+export interface SupabaseProjectProfile {
+  id: string;
+  name: string;
+  projectUrl: string;
+  anonKey: string;
+  serviceKey?: string;
+  region?: string;
+  ref?: string;
+  organization?: string;
+  ipAddress?: string;
+  createdAt?: string;
+  status?: 'Active' | 'Paused' | 'Restoring' | 'Maintenance';
+}
+
 export interface UsageMetrics {
   restApiRequests: number; // e.g., 9320 (displayed as 9.3K)
   restApiTrend: number; // % change

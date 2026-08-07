@@ -154,7 +154,7 @@ const TableSparkline: React.FC<{
   );
 };
 
-export const LargestTablesSection: React.FC<LargestTablesSectionProps> = ({
+export const LargestTablesSection: React.FC<LargestTablesSectionProps> = React.memo(({
   tables,
   onSelectTable,
   onOpenMenu,
@@ -288,4 +288,5 @@ export const LargestTablesSection: React.FC<LargestTablesSectionProps> = ({
       </div>
     </div>
   );
-};
+});
+

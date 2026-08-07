@@ -1,59 +1,4 @@
--- 0. History table for tracking table size growth (powers the 24h growth metric).
--- Run this once. The snapshot_table_sizes() function must be called periodically
--- (the dashboard calls it automatically on refresh, or set up pg_cron — see 0c) so
--- that after ~24h you get real growth numbers.
-CREATE TABLE IF NOT EXISTS table_size_history (
-  table_schema text NOT NULL,
-  table_name text NOT NULL,
-  size_bytes bigint NOT NULL,
-  captured_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_table_size_history_lookup
-  ON table_size_history (table_schema, table_name, captured_at);
-
--- 0b. Snapshot current table sizes (call every few minutes/hours).
-CREATE OR REPLACE FUNCTION snapshot_table_sizes()
-RETURNS void AS $$
-BEGIN
-  INSERT INTO table_size_history (table_schema, table_name, size_bytes)
-  SELECT t.table_schema, t.table_name,
-         pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')
-  FROM information_schema.tables t
-  WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE'
-    AND NOT EXISTS (
-      SELECT 1 FROM table_size_history h
-      WHERE h.table_schema = t.table_schema
-        AND h.table_name = t.table_name
-        AND h.captured_at > now() - interval '10 minutes'
-    );
-
-  -- Keep only the last ~48h of history (enough for the 24h growth metric).
-  DELETE FROM table_size_history WHERE captured_at < now() - interval '2 days';
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 0c. OPTIONAL but recommended: auto-run snapshot_table_sizes() every 10 minutes
--- using pg_cron (available on all Supabase projects). Run this once in the SQL Editor.
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Schedule the job (job name + cron expression + the function call).
--- '*/10 * * * *' = every 10 minutes.
-SELECT cron.schedule(
-  'snapshot-table-sizes',
-  '*/10 * * * *',
-  $$SELECT snapshot_table_sizes()$$
-);
-
--- Verify the job was created:
--- SELECT * FROM cron.job WHERE jobname = 'snapshot-table-sizes';
-
--- Check recent runs / any errors:
--- SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 5;
-
--- To remove the job later:
--- SELECT cron.unschedule('snapshot-table-sizes');
-
--- 1. Function to get largest tables (now includes growth24hMb)
+-- 1. Function to get largest tables
 CREATE OR REPLACE FUNCTION get_largest_tables()
 RETURNS json AS $$
 DECLARE
@@ -64,63 +9,24 @@ BEGIN
       'id', t.table_name,
       'name', t.table_name,
       'schema', t.table_schema,
-      'sizeBytes', pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"'),
-      'formattedSize', pg_size_pretty(pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')),
+      'sizeBytes', pg_total_relation_size('"' || t.table_schema || '"."' || t.table_name || '"'),
+      'formattedSize', pg_size_pretty(pg_total_relation_size('"' || t.table_schema || '"."' || t.table_name || '"')),
       'estimatedRows', (SELECT reltuples::bigint FROM pg_class WHERE relname = t.table_name LIMIT 1),
       'columnsCount', (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name),
       'primaryKey', 'id',
       'description', 'Real table from Supabase',
-      'growth24hMb', (
-        -- MB grown in the last 24h: current size minus size ~24h ago (closest snapshot).
-        SELECT round(
-          (pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')
-           - (SELECT h.size_bytes FROM table_size_history h
-              WHERE h.table_schema = t.table_schema
-                AND h.table_name = t.table_name
-                AND h.captured_at <= now() - interval '23 hours'
-              ORDER BY h.captured_at DESC
-              LIMIT 1))::numeric / 1048576, 2)
-      ),
       'columns', '[]'::json,
       'sampleData', '[]'::json
     )
   ) INTO result
   FROM information_schema.tables t
   WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE';
-
+  
   RETURN coalesce(result, '[]'::json);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 1b. Function to get per-hour size history for one table (powers the sparkline in
--- the table detail modal). Returns the latest snapshot per hour bucket for the last 24h.
-CREATE OR REPLACE FUNCTION get_table_size_history(p_schema text, p_table text)
-RETURNS json AS $$
-DECLARE
-  result json;
-BEGIN
-  SELECT coalesce(json_agg(
-    json_build_object(
-      'capturedAt', h.captured_at,
-      'sizeBytes', h.size_bytes
-    ) ORDER BY h.captured_at
-  ), '[]'::json) INTO result
-  FROM (
-    SELECT DISTINCT ON (date_trunc('hour', captured_at))
-           date_trunc('hour', captured_at) AS captured_at,
-           size_bytes
-    FROM table_size_history
-    WHERE table_schema = p_schema
-      AND table_name = p_table
-      AND captured_at >= now() - interval '24 hours'
-    ORDER BY date_trunc('hour', captured_at) DESC, captured_at DESC
-  ) h;
-
-  RETURN result;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 2. Function to get real dashboard metrics (includes total 24h DB growth)
+-- 2. Function to get real dashboard metrics
 CREATE OR REPLACE FUNCTION get_dashboard_metrics()
 RETURNS json AS $$
 DECLARE
@@ -128,7 +34,6 @@ DECLARE
   conn_count int;
   table_count int;
   users_count int;
-  total_growth_mb numeric;
 BEGIN
   SELECT pg_database_size(current_database()) INTO db_size;
   SELECT count(*) INTO conn_count FROM pg_stat_activity;
@@ -140,28 +45,11 @@ BEGIN
     users_count := 0;
   END;
 
-  -- Total 24h growth: sum of per-table growth (current size minus size ~23h ago).
-  -- Returns 0 until snapshots have been collected for ~24h (see section 0/0b/0c).
-  SELECT COALESCE(sum(growth_mb), 0) INTO total_growth_mb
-  FROM (
-    SELECT round(
-      (pg_total_relation_size('"' || t.table_schema || '".' || '"' || t.table_name || '"')
-       - (SELECT h.size_bytes FROM table_size_history h
-          WHERE h.table_schema = t.table_schema
-            AND h.table_name = t.table_name
-            AND h.captured_at <= now() - interval '23 hours'
-          ORDER BY h.captured_at DESC
-          LIMIT 1))::numeric / 1048576, 2) AS growth_mb
-    FROM information_schema.tables t
-    WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE'
-  ) s;
-
   RETURN json_build_object(
     'dbSizeBytes', db_size,
     'connectionsCount', conn_count,
     'tablesCount', table_count,
-    'authUsersCount', users_count,
-    'dbGrowth24hMb', total_growth_mb
+    'authUsersCount', users_count
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
