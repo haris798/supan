@@ -1,10 +1,13 @@
-export function formatTableSize(formattedSize: string, sizeBytes?: number): string {
+export function formatTableSize(formattedSize: string | number, sizeBytes?: number): string {
+  if (typeof formattedSize === 'number') {
+    return (formattedSize / (1024 * 1024)).toFixed(1) + ' MB';
+  }
   if (!formattedSize) {
     if (sizeBytes !== undefined) {
       const kb = Math.round(sizeBytes / 1024);
       if (kb >= 1000) {
         const mb = (sizeBytes / (1024 * 1024)).toFixed(1);
-        return `${mb} Mb`;
+        return `${mb} MB`;
       }
       return `${kb} kB`;
     }
@@ -17,13 +20,21 @@ export function formatTableSize(formattedSize: string, sizeBytes?: number): stri
     const kbNum = parseInt(kbMatch[1], 10);
     if (sizeBytes) {
       const mb = (sizeBytes / (1024 * 1024)).toFixed(1);
-      return `${mb} Mb`;
+      return `${mb} MB`;
     }
     const mb = (kbNum / 1024).toFixed(1);
-    return `${mb} Mb`;
+    return `${mb} MB`;
   }
 
   return formattedSize;
+}
+
+export function formatGrowthMb(val: number): string {
+  if (typeof val !== 'number' || isNaN(val)) return '0 MB';
+  const abs = Math.abs(val);
+  if (abs <= 0.05) return '0 MB';
+  if (abs < 10) return `${(val > 0 ? '+' : '-') + abs.toFixed(1)} MB`;
+  return `${(val > 0 ? '+' : '-') + Math.round(abs)} MB`;
 }
 
 export function formatCountdown(seconds: number): string {
@@ -34,3 +45,4 @@ export function formatCountdown(seconds: number): string {
   }
   return `${seconds}s`;
 }
+
